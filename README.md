@@ -1,2 +1,2 @@
-# commands
-- 
+# installation of dependencies
+- npm install mongoose
