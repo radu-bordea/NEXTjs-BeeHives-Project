@@ -8,6 +8,8 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  Bar,
+  BarChart,
   ResponsiveContainer,
 } from "recharts";
 import { useEffect, useState, use } from "react";
@@ -55,14 +57,14 @@ export default function ScaleDetailPage({ params }) {
 
       {/* Example: render one of the humidity chart */}
       <ResponsiveContainer width="100%" height={250}>
-        <LineChart data={data}>
+        <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="time" />
           <YAxis />
           <Tooltip />
           <Legend />
-          <Line type="monotone" dataKey="humidity" stroke="#8884d8" />
-        </LineChart>
+          <Bar dataKey="humidity" fill="#8884d8" />
+        </BarChart>
       </ResponsiveContainer>
 
       {/* Example: render one of the weight chart */}
