@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function ScalesPage() {
   const [scales, setScales] = useState([]);
@@ -9,7 +10,8 @@ export default function ScalesPage() {
   const [selectedScaleData, setSelectedScaleData] = useState(null);
   const [error, setError] = useState(null);
 
-  // Fetch scales from the database (you already stored them earlier)
+  const router = useRouter();
+
   const fetchScales = async () => {
     setLoading(true);
     try {
@@ -24,11 +26,9 @@ export default function ScalesPage() {
     }
   };
 
-  // Sync scales with the API (fetch and store data in the database)
   const syncScales = async () => {
     setSyncing(true);
     try {
-      // Trigger the data fetch and storage in the database
       for (const scale of scales) {
         const res = await fetch(`/api/scale-data/${scale.scale_id}`, {
           method: "POST",
@@ -42,7 +42,7 @@ export default function ScalesPage() {
           );
         }
       }
-      fetchScales(); // Refresh the scales data after sync
+      fetchScales();
     } catch (err) {
       console.error("❌ Sync error:", err);
       setError("Sync failed due to an internal error.");
@@ -51,31 +51,24 @@ export default function ScalesPage() {
     }
   };
 
-  // Fetch stored scale data from the database
   const fetchScaleData = async (scaleId) => {
-    setSelectedScaleData(null); // Reset data before fetching new
-    setError(null); // Reset error before fetching new data
+    setSelectedScaleData(null);
+    setError(null);
     try {
       const res = await fetch(`/api/scale-data/${scaleId}`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch scale data");
-      }
+      if (!res.ok) throw new Error("Failed to fetch scale data");
       const data = await res.json();
-      setSelectedScaleData(data); // Set the scale data into the state
-      console.log(selectedScaleData);
-      
+      setSelectedScaleData(data);
     } catch (err) {
       console.error("❌ Error fetching scale data:", err);
       setError("Failed to fetch scale data.");
     }
   };
 
-  // Handle when the user clicks a scale to view its data
   const handleScaleClick = (scaleId) => {
-    fetchScaleData(scaleId); // Trigger the data fetch
+    fetchScaleData(scaleId);
   };
 
-  // Run the fetch scales on initial load
   useEffect(() => {
     fetchScales();
   }, []);
@@ -110,22 +103,28 @@ export default function ScalesPage() {
               <p className="text-sm text-gray-700">
                 Hardware Key: {scale.hardware_key}
               </p>
+
               <button
-                onClick={() => handleScaleClick(scale.scale_id)} // Fetch and display data for this scale
+                onClick={() => handleScaleClick(scale.scale_id)}
                 className="mt-4 bg-green-600 text-white px-4 py-2 rounded"
               >
                 📊 View Data
+              </button>
+
+              <button
+                onClick={() => router.push(`/scales/${scale.scale_id}`)}
+                className="mt-2 bg-blue-600 text-white px-4 py-2 rounded ml-2 hover:bg-blue-700 transition"
+              >
+                📈 View Charts
               </button>
             </div>
           ))}
         </div>
       )}
 
-      {/* Render the selected scale data if available */}
       {selectedScaleData && (
         <div className="mt-8">
           <h3 className="text-xl font-semibold mb-4">Measurement Data</h3>
-          {/* Render data in a table */}
           <table className="table-auto w-full border">
             <thead>
               <tr>
@@ -139,9 +138,7 @@ export default function ScalesPage() {
               {selectedScaleData.map((item, index) => (
                 <tr key={index}>
                   <td className="border px-4 py-2">
-                    <td className="border px-4 py-2">
-                      {item.time ? new Date(item.time).toLocaleString() : "N/A"}
-                    </td>
+                    {item.time ? new Date(item.time).toLocaleString() : "N/A"}
                   </td>
                   <td className="border px-4 py-2">{item.weight}</td>
                   <td className="border px-4 py-2">{item.temperature}</td>
@@ -153,7 +150,6 @@ export default function ScalesPage() {
         </div>
       )}
 
-      {/* Render error message */}
       {error && (
         <div className="mt-4 text-red-500">
           <p>{error}</p>
