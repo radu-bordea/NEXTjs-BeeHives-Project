@@ -1,4 +1,3 @@
-// app/scales/page.js
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,43 +6,76 @@ export default function ScalesPage() {
   const [scales, setScales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [selectedScaleData, setSelectedScaleData] = useState(null);
+  const [error, setError] = useState(null);
 
+  // Fetch scales from the database (you already stored them earlier)
   const fetchScales = async () => {
     setLoading(true);
     try {
-
-
       const res = await fetch("/api/scales");
       const data = await res.json();
       setScales(data.scales || []);
     } catch (err) {
       console.error("❌ Error loading scales:", err);
+      setError("Failed to load scales.");
     } finally {
       setLoading(false);
     }
   };
 
-const syncScales = async () => {
-  setSyncing(true);
-  try {
-    const res = await fetch("/api/scales", { method: "POST" });
-    const data = await res.json();
-    if (res.ok) {
-      alert(`✅ Synced ${data.count} scales`);
-      fetchScales();
-    } else {
-      console.error(`❌ Failed to sync: ${data.error}`);
-      setError(data.error || 'Failed to sync scales');
+  // Sync scales with the API (fetch and store data in the database)
+  const syncScales = async () => {
+    setSyncing(true);
+    try {
+      // Trigger the data fetch and storage in the database
+      for (const scale of scales) {
+        const res = await fetch(`/api/scale-data/${scale.scale_id}`, {
+          method: "POST",
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ Synced data for scale ID: ${scale.scale_id}`);
+        } else {
+          console.error(
+            `❌ Failed to sync scale ${scale.scale_id}: ${data.error}`
+          );
+        }
+      }
+      fetchScales(); // Refresh the scales data after sync
+    } catch (err) {
+      console.error("❌ Sync error:", err);
+      setError("Sync failed due to an internal error.");
+    } finally {
+      setSyncing(false);
     }
-  } catch (err) {
-    console.error("❌ Sync error:", err);
-    setError("Sync failed due to an internal error.");
-  } finally {
-    setSyncing(false);
-  }
-};
+  };
 
+  // Fetch stored scale data from the database
+  const fetchScaleData = async (scaleId) => {
+    setSelectedScaleData(null); // Reset data before fetching new
+    setError(null); // Reset error before fetching new data
+    try {
+      const res = await fetch(`/api/scale-data/${scaleId}`);
+      if (!res.ok) {
+        throw new Error("Failed to fetch scale data");
+      }
+      const data = await res.json();
+      setSelectedScaleData(data); // Set the scale data into the state
+      console.log(selectedScaleData);
+      
+    } catch (err) {
+      console.error("❌ Error fetching scale data:", err);
+      setError("Failed to fetch scale data.");
+    }
+  };
 
+  // Handle when the user clicks a scale to view its data
+  const handleScaleClick = (scaleId) => {
+    fetchScaleData(scaleId); // Trigger the data fetch
+  };
+
+  // Run the fetch scales on initial load
   useEffect(() => {
     fetchScales();
   }, []);
@@ -78,17 +110,53 @@ const syncScales = async () => {
               <p className="text-sm text-gray-700">
                 Hardware Key: {scale.hardware_key}
               </p>
-              <p className="text-sm text-gray-500 mt-2">
-                Last Transmission:
-                <br />
-                <span className="font-mono">
-                  {new Date(
-                    scale.latest_transmission_timestamp
-                  ).toLocaleString()}
-                </span>
-              </p>
+              <button
+                onClick={() => handleScaleClick(scale.scale_id)} // Fetch and display data for this scale
+                className="mt-4 bg-green-600 text-white px-4 py-2 rounded"
+              >
+                📊 View Data
+              </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Render the selected scale data if available */}
+      {selectedScaleData && (
+        <div className="mt-8">
+          <h3 className="text-xl font-semibold mb-4">Measurement Data</h3>
+          {/* Render data in a table */}
+          <table className="table-auto w-full border">
+            <thead>
+              <tr>
+                <th className="border px-4 py-2">Time</th>
+                <th className="border px-4 py-2">Weight</th>
+                <th className="border px-4 py-2">Temperature</th>
+                <th className="border px-4 py-2">Humidity</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedScaleData.map((item, index) => (
+                <tr key={index}>
+                  <td className="border px-4 py-2">
+                    <td className="border px-4 py-2">
+                      {item.time ? new Date(item.time).toLocaleString() : "N/A"}
+                    </td>
+                  </td>
+                  <td className="border px-4 py-2">{item.weight}</td>
+                  <td className="border px-4 py-2">{item.temperature}</td>
+                  <td className="border px-4 py-2">{item.humidity}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Render error message */}
+      {error && (
+        <div className="mt-4 text-red-500">
+          <p>{error}</p>
         </div>
       )}
     </div>
