@@ -11,6 +11,8 @@ export default function ScalesPage() {
   const fetchScales = async () => {
     setLoading(true);
     try {
+
+
       const res = await fetch("/api/scales");
       const data = await res.json();
       setScales(data.scales || []);
@@ -21,24 +23,26 @@ export default function ScalesPage() {
     }
   };
 
-  const syncScales = async () => {
-    setSyncing(true);
-    try {
-      const res = await fetch("/api/scales", { method: "POST" });
-      const data = await res.json();
-      if (res.ok) {
-        alert(`✅ Synced ${data.count} scales`);
-        fetchScales();
-      } else {
-        alert(`❌ Failed to sync: ${data.error}`);
-      }
-    } catch (err) {
-      console.error("❌ Sync error:", err);
-      alert("Sync failed.");
-    } finally {
-      setSyncing(false);
+const syncScales = async () => {
+  setSyncing(true);
+  try {
+    const res = await fetch("/api/scales", { method: "POST" });
+    const data = await res.json();
+    if (res.ok) {
+      alert(`✅ Synced ${data.count} scales`);
+      fetchScales();
+    } else {
+      console.error(`❌ Failed to sync: ${data.error}`);
+      setError(data.error || 'Failed to sync scales');
     }
-  };
+  } catch (err) {
+    console.error("❌ Sync error:", err);
+    setError("Sync failed due to an internal error.");
+  } finally {
+    setSyncing(false);
+  }
+};
+
 
   useEffect(() => {
     fetchScales();

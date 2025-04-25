@@ -28,7 +28,7 @@ export async function POST() {
     }
 
     const client = await clientPromise;
-    const db = client.db(); // Auto-select from URI
+    const db = client.db("beehives"); // Auto-select from URI
     const collection = db.collection("scales");
 
     await collection.deleteMany({});
@@ -49,7 +49,7 @@ export async function POST() {
 export async function GET() {
   try {
     const client = await clientPromise;
-    const db = client.db();
+    const db = client.db("beehives");
     const collection = db.collection("scales");
 
     const scales = await collection.find().toArray();
