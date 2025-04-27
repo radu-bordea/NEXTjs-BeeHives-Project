@@ -2,5 +2,7 @@
 - npm install mongoose
 - npm install recharts
 - npm install recharts@latest
+- npm i react-icons
+- npm i react-spinners
 
 
