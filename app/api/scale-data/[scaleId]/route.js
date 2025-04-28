@@ -1,22 +1,35 @@
 import clientPromise from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 
+// POST: Fetch from external API and Save into MongoDB
 export async function POST(_req, context) {
-  const { scaleId } = await context.params; // ❌ remove "await" — this is not a promise
+  const { scaleId } = context.params; // Extract scaleId from URL params
   console.log("🚀 POST scaleId:", scaleId);
 
   try {
-    const bodyPayload = {
+    const client = await clientPromise;
+    const db = client.db(); // Get database connection
+
+    // Define time range
+    const timeStart = Math.floor(
+      new Date("2025-03-07T00:00:00Z").getTime() / 1000
+    ); // Start from 7 March 2025
+    const timeEnd = Math.floor(Date.now() / 1000); // End at current time
+
+    // --- 1. Fetch and Save HOURLY Data ---
+
+    const hourlyPayload = {
       scale: scaleId,
-      time_start: Math.floor(Date.now() / 1000) - 86400,
-      time_end: Math.floor(Date.now() / 1000),
+      time_start: timeStart,
+      time_end: timeEnd,
       time_resolution: "hourly",
       format: "json",
     };
 
-    console.log("📤 Sending request to external API with body:", bodyPayload);
+    console.log("📤 Fetching HOURLY data...");
 
-    const externalRes = await fetch(
+    // Send POST request to external API for HOURLY data
+    const hourlyRes = await fetch(
       `${process.env.API_BASE_URL}/user/scale/export`,
       {
         method: "POST",
@@ -24,77 +37,145 @@ export async function POST(_req, context) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${process.env.API_TOKEN}`,
         },
-        body: JSON.stringify(bodyPayload),
+        body: JSON.stringify(hourlyPayload),
       }
     );
 
-    if (!externalRes.ok) {
-      const error = await externalRes.text();
-      console.error("❌ External API error:", error);
+    if (!hourlyRes.ok) {
+      // If fetch failed, return error
+      const error = await hourlyRes.text();
+      console.error("❌ Hourly fetch error:", error);
       return NextResponse.json(
-        { error: "Failed to fetch data from external API" },
+        { error: "Failed to fetch hourly data" },
         { status: 500 }
       );
     }
 
-    const { data } = await externalRes.json();
-    console.log("📥 Received data from external API:", data?.length, "items");
+    const { data: hourlyData } = await hourlyRes.json();
+    console.log("📥 Hourly data received:", hourlyData?.length || 0);
 
-    if (!Array.isArray(data) || data.length === 0) {
-      console.warn("⚠️ No data returned from external API.");
+    if (Array.isArray(hourlyData) && hourlyData.length > 0) {
+      // Format data by adding scale_id
+      const formattedHourly = hourlyData.map((item) => ({
+        ...item,
+        scale_id: scaleId,
+      }));
+
+      // Get or create MongoDB collection for hourly data
+      const hourlyCollection = db.collection("scale_data_hourly");
+
+      // Optional: Clean old hourly data before inserting new
+      await hourlyCollection.deleteMany({ scale_id: scaleId });
+
+      // Insert new hourly data
+      const insertHourly = await hourlyCollection.insertMany(formattedHourly);
+
+      console.log(
+        `✅ Hourly data saved: ${insertHourly.insertedCount} documents`
+      );
+    } else {
+      console.warn("⚠️ No HOURLY data received");
+    }
+
+    // --- 2. Fetch and Save DAILY Data ---
+
+    const dailyPayload = {
+      scale: scaleId,
+      time_start: timeStart,
+      time_end: timeEnd,
+      time_resolution: "daily",
+      format: "json",
+    };
+
+    console.log("📤 Fetching DAILY data...");
+
+    // Send POST request to external API for DAILY data
+    const dailyRes = await fetch(
+      `${process.env.API_BASE_URL}/user/scale/export`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.API_TOKEN}`,
+        },
+        body: JSON.stringify(dailyPayload),
+      }
+    );
+
+    if (!dailyRes.ok) {
+      // If fetch failed, return error
+      const error = await dailyRes.text();
+      console.error("❌ Daily fetch error:", error);
       return NextResponse.json(
-        { message: "No data received", count: 0 },
-        { status: 200 }
+        { error: "Failed to fetch daily data" },
+        { status: 500 }
       );
     }
 
-    const client = await clientPromise;
-    const db = client.db(); // uses DB from Mongo URI
-    const collection = db.collection("scale_data");
+    const { data: dailyData } = await dailyRes.json();
+    console.log("📥 Daily data received:", dailyData?.length || 0);
 
-    const formattedData = data.map((item) => ({
-      ...item,
-      scale_id: scaleId,
-    }));
+    if (Array.isArray(dailyData) && dailyData.length > 0) {
+      // Format data by adding scale_id
+      const formattedDaily = dailyData.map((item) => ({
+        ...item,
+        scale_id: scaleId,
+      }));
 
-    console.log("💾 Inserting", formattedData.length, "items into MongoDB...");
+      // Get or create MongoDB collection for daily data
+      const dailyCollection = db.collection("scale_data_daily");
 
-    await collection.deleteMany({ scale_id: scaleId }); // Optional: clean old data
-    const insertResult = await collection.insertMany(formattedData);
+      // Optional: Clean old daily data before inserting new
+      await dailyCollection.deleteMany({ scale_id: scaleId });
 
-    console.log(
-      "✅ Data saved to MongoDB:",
-      insertResult.insertedCount,
-      "docs"
-    );
+      // Insert new daily data
+      const insertDaily = await dailyCollection.insertMany(formattedDaily);
 
+      console.log(
+        `✅ Daily data saved: ${insertDaily.insertedCount} documents`
+      );
+    } else {
+      console.warn("⚠️ No DAILY data received");
+    }
+
+    // Successfully finished
     return NextResponse.json(
-      {
-        message: "✅ Scale data saved to DB",
-        count: insertResult.insertedCount,
-      },
+      { message: "✅ Hourly and Daily data saved!" },
       { status: 200 }
     );
   } catch (err) {
-    console.error("❌ Error saving data:", err);
+    // Catch unexpected errors
+    console.error("❌ Error saving scale data:", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
 
-export async function GET(_req, context) {
-  const { scaleId } = await context.params;
-  console.log("🔍 GET scaleId:", scaleId);
+// GET: Read scale data from MongoDB
+export async function GET(req, context) {
+  const { scaleId } = context.params; // Extract scaleId
+  const url = new URL(req.url);
+  const resolution = url.searchParams.get("resolution") || "hourly"; // Read resolution param (default: hourly)
+
+  console.log(`🔍 GET scaleId: ${scaleId}, resolution: ${resolution}`);
 
   try {
     const client = await clientPromise;
     const db = client.db();
 
-    const scaleData = await db
-      .collection("scale_data")
+    // Pick correct collection depending on requested resolution
+    const collectionName =
+      resolution === "daily" ? "scale_data_daily" : "scale_data_hourly";
+    const collection = db.collection(collectionName);
+
+    // Fetch data for the requested scaleId, sorted by time ascending
+    const scaleData = await collection
       .find({ scale_id: scaleId })
+      .sort({ time: 1 })
       .toArray();
 
-    console.log("📦 Data fetched from DB:", scaleData.length, "records");
+    console.log(
+      `📦 Fetched ${scaleData.length} records from ${collectionName}`
+    );
 
     return NextResponse.json(scaleData);
   } catch (err) {

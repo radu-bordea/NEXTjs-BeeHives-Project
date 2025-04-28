@@ -19,6 +19,7 @@ export async function POST() {
     }
 
     const data = await response.json();
+    console.log("Fetched scales:", data); // Debugging the response
 
     if (!data?.scales || !Array.isArray(data.scales)) {
       console.error("❌ Invalid scales format:", data);
@@ -31,11 +32,18 @@ export async function POST() {
     const db = client.db(); // Auto-select from URI
     const collection = db.collection("scales");
 
+    // Log the scales data to verify
+    console.log("Inserting scales into database:", data.scales);
+
+    // Clear previous scales and insert new data
     await collection.deleteMany({});
-    await collection.insertMany(data.scales);
+    const insertResult = await collection.insertMany(data.scales);
 
     return new Response(
-      JSON.stringify({ message: "Scales synced", count: data.scales.length }),
+      JSON.stringify({
+        message: "Scales synced",
+        count: insertResult.insertedCount,
+      }),
       { status: 200 }
     );
   } catch (err) {
@@ -53,6 +61,7 @@ export async function GET() {
     const collection = db.collection("scales");
 
     const scales = await collection.find().toArray();
+    console.log("Fetched scales:", scales); // Debugging the scales data
 
     return new Response(JSON.stringify({ scales }), { status: 200 });
   } catch (err) {

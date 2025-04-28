@@ -20,7 +20,7 @@ export default function ScaleDetailPage({ params }) {
 
   useEffect(() => {
     async function fetchData() {
-      const res = await fetch(`/api/scale-data/${scale_id}`);
+      const res = await fetch(`/api/scale-data/${scale_id}?resolution=daily`);
       const json = await res.json();
 
       const formatted = json.map((m) => ({
@@ -35,7 +35,7 @@ export default function ScaleDetailPage({ params }) {
     }
 
     fetchData();
-  }, [scale_id]);
+  }, [scale_id]); // Fetch whenever scale_id changes
 
   return (
     <div className="p-6">
