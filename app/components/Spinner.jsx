@@ -1,8 +1,12 @@
+"use client";
+
 const Spinner = () => {
   return (
-    <div className="absolute inset-0 bg-white bg-opacity-80 flex flex-col items-center justify-center z-50">
-      <div className="animate-spin rounded-full h-48 w-48 border-t-3 border-b-3 border-indigo-600"></div>
-      <p className="mt-4 text-indigo-600 font-semibold">Syncing scales and scales data...</p>
+    <div className="fixed inset-0 bg-white bg-opacity-80 flex flex-col items-center justify-center z-50">
+      <div className="animate-spin rounded-full h-24 w-24 border-4 border-t-transparent border-indigo-600"></div>
+      <p className="mt-4 text-indigo-600 font-semibold text-lg">
+        Syncing scales and scales data...
+      </p>
     </div>
   );
 };

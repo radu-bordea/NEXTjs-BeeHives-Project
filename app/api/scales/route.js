@@ -5,6 +5,7 @@ export async function POST() {
   try {
     const response = await fetch(`${process.env.API_BASE_URL}/user/scale`, {
       headers: {
+        "Content-Type": "application/json",
         Authorization: `Bearer ${process.env.API_TOKEN}`,
       },
     });
