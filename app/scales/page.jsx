@@ -8,7 +8,10 @@ export default function ScalesPage() {
   const [scales, setScales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [selectedScaleData, setSelectedScaleData] = useState(null);
+  const [selectedResolution, setSelectedResolution] = useState("hourly");
+  const [selectedScaleId, setSelectedScaleId] = useState(null);
+  const [scaleDataHourly, setScaleDataHourly] = useState(null);
+  const [scaleDataDaily, setScaleDataDaily] = useState(null);
   const [error, setError] = useState(null);
 
   const router = useRouter();
@@ -82,21 +85,29 @@ export default function ScalesPage() {
     }
   };
 
-  const fetchScaleData = async (scaleId, resolution = "hourly") => {
-    setSelectedScaleData(null);
-    setError(null);
-    try {
-      const res = await fetch(
-        `/api/scale-data/${scaleId}?resolution=${resolution}`
-      );
-      if (!res.ok) throw new Error("Failed to fetch scale data");
-      const data = await res.json();
-      setSelectedScaleData(data);
-    } catch (err) {
-      console.error("❌ Error fetching scale data:", err);
-      setError("Failed to fetch scale data.");
+const fetchScaleData = async (scaleId, resolution = "hourly") => {
+  setSelectedScaleId(scaleId);
+  setSelectedResolution(resolution);
+  setScaleDataHourly(null);
+  setScaleDataDaily(null);
+  setError(null);
+  try {
+    const res = await fetch(
+      `/api/scale-data/${scaleId}?resolution=${resolution}`
+    );
+    if (!res.ok) throw new Error("Failed to fetch scale data");
+    const data = await res.json();
+    if (resolution === "hourly") {
+      setScaleDataHourly(data);
+    } else {
+      setScaleDataDaily(data);
     }
-  };
+  } catch (err) {
+    console.error("❌ Error fetching scale data:", err);
+    setError("Failed to fetch scale data.");
+  }
+};
+
 
   const handleScaleClick = (scaleId) => {
     fetchScaleData(scaleId);
@@ -159,31 +170,33 @@ export default function ScalesPage() {
         </div>
       )}
 
-      {selectedScaleData && (
+      {(scaleDataHourly || scaleDataDaily) && (
         <div className="mt-8">
           <h3 className="text-xl font-semibold mb-4">Measurement Data</h3>
 
-          {/* Resolution Toggle Buttons */}
           <div className="flex mb-4">
             <button
-              onClick={() =>
-                fetchScaleData(selectedScaleData.scale_id, "hourly")
-              }
-              className="bg-blue-600 text-white px-4 py-2 rounded mr-2"
+              onClick={() => fetchScaleData(selectedScaleId, "hourly")}
+              className={`px-4 py-2 rounded mr-2 ${
+                selectedResolution === "hourly"
+                  ? "bg-blue-700 text-white"
+                  : "bg-gray-200"
+              }`}
             >
               Hourly Data
             </button>
             <button
-              onClick={() =>
-                fetchScaleData(selectedScaleData.scale_id, "daily")
-              }
-              className="bg-green-600 text-white px-4 py-2 rounded"
+              onClick={() => fetchScaleData(selectedScaleId, "daily")}
+              className={`px-4 py-2 rounded ${
+                selectedResolution === "daily"
+                  ? "bg-green-700 text-white"
+                  : "bg-gray-200"
+              }`}
             >
               Daily Data
             </button>
           </div>
 
-          {/* Measurement Data Table */}
           <table className="table-auto w-full border">
             <thead>
               <tr>
@@ -194,7 +207,10 @@ export default function ScalesPage() {
               </tr>
             </thead>
             <tbody>
-              {selectedScaleData.map((item, index) => (
+              {(selectedResolution === "hourly"
+                ? scaleDataHourly
+                : scaleDataDaily
+              )?.map((item, index) => (
                 <tr key={index}>
                   <td className="border px-4 py-2">
                     {item.time ? new Date(item.time).toLocaleString() : "N/A"}

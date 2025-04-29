@@ -15,27 +15,42 @@ import {
 import { useEffect, useState, use } from "react";
 
 export default function ScaleDetailPage({ params }) {
-  const { scale_id } = use(params); // ✅ unwrap Promise-like params with use()
-  const [data, setData] = useState([]);
+  const { scale_id } = use(params);
+  const [selectedResolution, setSelectedResolution] = useState("daily");
+  const [scaleDataDaily, setScaleDataDaily] = useState([]);
+  const [scaleDataHourly, setScaleDataHourly] = useState([]);
 
   useEffect(() => {
     async function fetchData() {
-      const res = await fetch(`/api/scale-data/${scale_id}?resolution=daily`);
-      const json = await res.json();
+      try {
+        const res = await fetch(
+          `/api/scale-data/${scale_id}?resolution=${selectedResolution}`
+        );
+        const json = await res.json();
 
-      const formatted = json.map((m) => ({
-        ...m,
-        time: new Date(m.time).toLocaleString(),
-        weight: m.weight || 0,
-        temperature: m.temperature || 0,
-        humidity: m.humidity || 0,
-      }));
+        const formatted = json.map((m) => ({
+          ...m,
+          time: new Date(m.time).toLocaleString(),
+          weight: m.weight || 0,
+          temperature: m.temperature || 0,
+          humidity: m.humidity || 0,
+        }));
 
-      setData(formatted);
+        if (selectedResolution === "daily") {
+          setScaleDataDaily(formatted);
+        } else {
+          setScaleDataHourly(formatted);
+        }
+      } catch (err) {
+        console.error("❌ Error fetching scale data:", err);
+      }
     }
 
     fetchData();
-  }, [scale_id]); // Fetch whenever scale_id changes
+  }, [scale_id, selectedResolution]);
+
+  const chartData =
+    selectedResolution === "daily" ? scaleDataDaily : scaleDataHourly;
 
   return (
     <div className="p-6">
@@ -43,39 +58,64 @@ export default function ScaleDetailPage({ params }) {
         📊 Graphs for Scale ID: {scale_id}
       </h1>
 
-      {/* Example: render one of the temperature chart */}
+      <h3 className="text-xl font-semibold mb-4">Measurement Data</h3>
+
+      <div className="flex mb-6">
+        <button
+          onClick={() => setSelectedResolution("hourly")}
+          className={`px-4 py-2 rounded mr-2 ${
+            selectedResolution === "hourly"
+              ? "bg-blue-700 text-white"
+              : "bg-gray-200"
+          }`}
+        >
+          Hourly Data
+        </button>
+        <button
+          onClick={() => setSelectedResolution("daily")}
+          className={`px-4 py-2 rounded ${
+            selectedResolution === "daily"
+              ? "bg-green-700 text-white"
+              : "bg-gray-200"
+          }`}
+        >
+          Daily Data
+        </button>
+      </div>
+
+      {/* Temperature Chart */}
       <ResponsiveContainer width="100%" height={250}>
-        <LineChart data={data}>
+        <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="time" />
           <YAxis />
           <Tooltip />
           <Legend />
-          <Line type="monotone" dataKey="temperature" stroke="#8884d8" />
+          <Line type="monotone" dataKey="temperature" stroke="#e53935" />
         </LineChart>
       </ResponsiveContainer>
 
-      {/* Example: render one of the humidity chart */}
-      <ResponsiveContainer width="100%" height={250}>
-        <BarChart data={data}>
+      {/* Humidity Chart */}
+      <ResponsiveContainer width="100%" height={250} className="mt-8">
+        <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="time" />
           <YAxis />
           <Tooltip />
           <Legend />
-          <Bar dataKey="humidity" fill="#8884d8" />
+          <Bar dataKey="humidity" fill="#1e88e5" />
         </BarChart>
       </ResponsiveContainer>
 
-      {/* Example: render one of the weight chart */}
-      <ResponsiveContainer width="100%" height={250}>
-        <LineChart data={data}>
+      {/* Weight Chart */}
+      <ResponsiveContainer width="100%" height={250} className="mt-8">
+        <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="time" />
           <YAxis />
           <Tooltip />
           <Legend />
-          <Line type="monotone" dataKey="weight" stroke="#8884d8" />
+          <Line type="monotone" dataKey="weight" stroke="#fb8c00" />
         </LineChart>
       </ResponsiveContainer>
     </div>
