@@ -1,15 +1,18 @@
 // app/api/scales/route.js
-import clientPromise from "@/lib/mongodb";
+import clientPromise from "@/lib/mongodb"; // MongoDB client connection helper
 
+// POST handler: Fetches scale data from external API, saves it to MongoDB
 export async function POST() {
   try {
+    // Step 1: Fetch scale data from external API
     const response = await fetch(`${process.env.API_BASE_URL}/user/scale`, {
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.API_TOKEN}`,
+        Authorization: `Bearer ${process.env.API_TOKEN}`, // Use Bearer token for auth
       },
     });
 
+    // Step 2: Handle failed external API response
     if (!response.ok) {
       const errText = await response.text();
       console.error("❌ External API error:", errText);
@@ -19,9 +22,11 @@ export async function POST() {
       );
     }
 
+    // Step 3: Parse response and validate format
     const data = await response.json();
-    console.log("Fetched scales:", data); // Debugging the response
+    console.log("Fetched scales:", data); // Log response for debugging
 
+    // Ensure `data.scales` exists and is an array
     if (!data?.scales || !Array.isArray(data.scales)) {
       console.error("❌ Invalid scales format:", data);
       return new Response(JSON.stringify({ error: "Invalid data format" }), {
@@ -29,17 +34,18 @@ export async function POST() {
       });
     }
 
+    // Step 4: Connect to MongoDB and get `scales` collection
     const client = await clientPromise;
-    const db = client.db(); // Auto-select from URI
+    const db = client.db(); // Uses default DB from URI
     const collection = db.collection("scales");
 
-    // Log the scales data to verify
     console.log("Inserting scales into database:", data.scales);
 
-    // Clear previous scales and insert new data
+    // Step 5: Clear old scale records and insert the new set
     await collection.deleteMany({});
     const insertResult = await collection.insertMany(data.scales);
 
+    // Step 6: Respond with success message and inserted count
     return new Response(
       JSON.stringify({
         message: "Scales synced",
@@ -48,6 +54,7 @@ export async function POST() {
       { status: 200 }
     );
   } catch (err) {
+    // Catch-all error handler for unexpected server issues
     console.error("❌ POST error:", err);
     return new Response(JSON.stringify({ error: "Internal Server Error" }), {
       status: 500,
@@ -55,17 +62,21 @@ export async function POST() {
   }
 }
 
+// GET handler: Returns all scales stored in MongoDB
 export async function GET() {
   try {
+    // Step 1: Connect to MongoDB and fetch all scales
     const client = await clientPromise;
     const db = client.db();
     const collection = db.collection("scales");
 
-    const scales = await collection.find().toArray();
-    console.log("Fetched scales:", scales); // Debugging the scales data
+    const scales = await collection.find().toArray(); // Convert cursor to array
+    console.log("Fetched scales:", scales); // Log for verification
 
+    // Step 2: Return scales in JSON format
     return new Response(JSON.stringify({ scales }), { status: 200 });
   } catch (err) {
+    // Handle MongoDB or server error
     console.error("❌ GET error:", err);
     return new Response(JSON.stringify({ error: "Failed to load scales" }), {
       status: 500,

@@ -1,4 +1,6 @@
 "use client";
+
+// Importing necessary components from recharts and other libraries
 import {
   LineChart,
   Line,
@@ -11,19 +13,31 @@ import {
   BarChart,
   ResponsiveContainer,
 } from "recharts";
+
 import { useEffect, useState, use } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
+// Main component to show data charts for a specific scale
 export default function ScaleDetailPage({ params }) {
+  // Calculate today's date and the date one week ago for default date range
+  const today = new Date();
+  const weekAgo = new Date();
+  weekAgo.setDate(today.getDate() - 7);
+
+  // Destructure scale ID from URL params
   const { scale_id } = use(params);
+
+  // States for chart resolution (daily/hourly), data, and selected date range
   const [selectedResolution, setSelectedResolution] = useState("daily");
   const [chartData, setChartData] = useState([]);
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(weekAgo);
+  const [endDate, setEndDate] = useState(today);
 
+  // Fetch chart data whenever relevant filters change
   useEffect(() => {
     async function fetchData() {
+      // Prevent fetch if dates are invalid
       if (!startDate || !endDate || startDate > endDate) return;
 
       const startISO = startDate.toISOString();
@@ -35,8 +49,10 @@ export default function ScaleDetailPage({ params }) {
             startISO
           )}&end=${encodeURIComponent(endISO)}`
         );
+
         const json = await res.json();
 
+        // Format the response for chart rendering
         const formatted = json.map((entry) => ({
           ...entry,
           time: new Date(entry.time).toLocaleString(),
@@ -54,18 +70,20 @@ export default function ScaleDetailPage({ params }) {
     fetchData();
   }, [scale_id, selectedResolution, startDate, endDate]);
 
-  // Calculate min and max for weight to dynamically adjust the zoom level
+  // Dynamically calculate min/max values for weight chart scaling
   const weightData = chartData.map((entry) => entry.weight);
   const minWeight = Math.min(...weightData);
   const maxWeight = Math.max(...weightData);
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">
+      {/* Title */}
+      <h1 className="text-2xl font-bold mb-6 ml-8">
         📊 Graphs for Scale ID: {scale_id}
       </h1>
 
-      <div className="flex mb-4">
+      {/* Resolution Selector Buttons */}
+      <div className="flex mb-4 ml-8">
         <button
           onClick={() => setSelectedResolution("hourly")}
           className={`px-4 py-2 rounded mr-2 ${
@@ -88,7 +106,8 @@ export default function ScaleDetailPage({ params }) {
         </button>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
+      {/* Date Pickers for Start and End Date */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6 ml-8">
         <div>
           <label className="block font-medium mb-1">Start Time:</label>
           <DatePicker
@@ -111,19 +130,19 @@ export default function ScaleDetailPage({ params }) {
         </div>
       </div>
 
+      {/* First Chart: Temperature over Time */}
       <ResponsiveContainer width="100%" height={250}>
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="time" />
-          <YAxis
-            domain={[minWeight - 5, maxWeight + 5]} // Add a little padding to make the chart easier to see
-          />
+          <YAxis />
           <Tooltip />
           <Legend />
-          <Line dataKey="weight" stroke="#fb8c00" type="monotone" />
+          <Line dataKey="temperature" stroke="#e53935" type="monotone" />
         </LineChart>
       </ResponsiveContainer>
 
+      {/* Second Chart: Humidity as Bar Chart */}
       <ResponsiveContainer width="100%" height={250} className="mt-8">
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -135,13 +154,13 @@ export default function ScaleDetailPage({ params }) {
         </BarChart>
       </ResponsiveContainer>
 
+      {/* Third Chart: Weight with Dynamic Y-Axis */}
       <ResponsiveContainer width="100%" height={250} className="mt-8">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="time" />
-          <YAxis
-            domain={[minWeight - 1, maxWeight + 1]} // Add a little padding to make the chart easier to see
-          />
+          <YAxis domain={[minWeight - 1, maxWeight + 1]} 
+          tickFormatter={(value)=> value.toFixed(2)}/>
           <Tooltip />
           <Legend />
           <Line dataKey="weight" stroke="#fb8c00" type="monotone" />
