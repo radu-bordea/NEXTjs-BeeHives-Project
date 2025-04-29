@@ -152,26 +152,36 @@ export async function POST(_req, context) {
 
 // GET: Read scale data from MongoDB
 export async function GET(req, context) {
-  const { scaleId } = context.params; // Extract scaleId
+  const { scaleId } = context.params;
   const url = new URL(req.url);
-  const resolution = url.searchParams.get("resolution") || "hourly"; // Read resolution param (default: hourly)
+  const resolution = url.searchParams.get("resolution") || "hourly";
+  const start = url.searchParams.get("start");
+  const end = url.searchParams.get("end");
 
   console.log(`🔍 GET scaleId: ${scaleId}, resolution: ${resolution}`);
+  console.log(`⏱️ Time range: ${start} → ${end}`);
 
   try {
     const client = await clientPromise;
     const db = client.db();
 
-    // Pick correct collection depending on requested resolution
     const collectionName =
       resolution === "daily" ? "scale_data_daily" : "scale_data_hourly";
     const collection = db.collection(collectionName);
 
-    // Fetch data for the requested scaleId, sorted by time ascending
-    const scaleData = await collection
-      .find({ scale_id: scaleId })
-      .sort({ time: 1 })
-      .toArray();
+    const filter = {
+      scale_id: scaleId,
+    };
+
+    // Only filter by time if both start and end are valid ISO strings
+    if (start && end) {
+      filter.time = {
+        $gte: start, // Use start as an ISO string
+        $lte: end, // Use end as an ISO string
+      };
+    }
+
+    const scaleData = await collection.find(filter).sort({ time: 1 }).toArray();
 
     console.log(
       `📦 Fetched ${scaleData.length} records from ${collectionName}`
