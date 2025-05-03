@@ -47,7 +47,13 @@ export default function ScalesPage() {
     setSyncing(true);
     try {
       // Sync metadata
-      const res = await fetch("/api/scales", { method: "POST" });
+      const res = await fetch("/api/scales", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
       const data = await res.json();
 
       if (res.ok) {
