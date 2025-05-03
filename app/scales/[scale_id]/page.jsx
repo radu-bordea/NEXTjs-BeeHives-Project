@@ -1,6 +1,6 @@
-"use client";
+"use client"; // Enables client-side interactivity for Next.js app
 
-// Importing necessary components from recharts and other libraries
+// Import chart components from Recharts
 import {
   LineChart,
   Line,
@@ -18,30 +18,56 @@ import { useEffect, useState, use } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-// Main component to show data charts for a specific scale
+// Main page component to show scale data charts
 export default function ScaleDetailPage({ params }) {
-  // Calculate today's date and the date one week ago for default date range
+  // Set default time range: today and a week ago
   const today = new Date();
   const weekAgo = new Date();
   weekAgo.setDate(today.getDate() - 7);
 
-  // Destructure scale ID from URL params
+  // Get scale_id from route parameters
   const { scale_id } = use(params);
 
-  // States for chart resolution (daily/hourly), data, and selected date range
-  const [selectedResolution, setSelectedResolution] = useState("daily");
-  const [chartData, setChartData] = useState([]);
-  const [startDate, setStartDate] = useState(weekAgo);
-  const [endDate, setEndDate] = useState(today);
+  // UI and state management hooks
+  const [selectedResolution, setSelectedResolution] = useState("daily"); // hourly or daily
+  const [chartData, setChartData] = useState([]); // holds formatted chart data
+  const [startDate, setStartDate] = useState(weekAgo); // date picker: start
+  const [endDate, setEndDate] = useState(today); // date picker: end
+  const [previewFetched, setPreviewFetched] = useState(false); // to show preview message
+  const [loadingFull, setLoadingFull] = useState(false); // loading state for full data
 
-  // Fetch chart data whenever relevant filters change
   useEffect(() => {
-    async function fetchData() {
-      // Prevent fetch if dates are invalid
-      if (!startDate || !endDate || startDate > endDate) return;
+    let didCancel = false; // guard to prevent state updates on unmounted component
 
+    // Fetch recent (preview) data, up to 20 records
+    const fetchPreview = async () => {
+      try {
+        const res = await fetch(
+          `/api/scale-data/${scale_id}/latest?resolution=${selectedResolution}&limit=20`
+        );
+        const json = await res.json();
+        if (!didCancel) {
+          const formatted = json.map((entry) => ({
+            ...entry,
+            time: new Date(entry.time).toLocaleString(), // format timestamp
+            weight: entry.weight ?? 0,
+            temperature: entry.temperature ?? 0,
+            humidity: entry.humidity ?? 0,
+          }));
+          setChartData(formatted);
+          setPreviewFetched(true); // flag preview as loaded
+        }
+      } catch (err) {
+        console.error("❌ Error fetching preview data:", err);
+      }
+    };
+
+    // Fetch full historical data based on user-selected date range
+    const fetchFull = async () => {
+      if (!startDate || !endDate || startDate > endDate) return;
       const startISO = startDate.toISOString();
       const endISO = endDate.toISOString();
+      setLoadingFull(true);
 
       try {
         const res = await fetch(
@@ -49,40 +75,48 @@ export default function ScaleDetailPage({ params }) {
             startISO
           )}&end=${encodeURIComponent(endISO)}`
         );
-
         const json = await res.json();
-
-        // Format the response for chart rendering
-        const formatted = json.map((entry) => ({
-          ...entry,
-          time: new Date(entry.time).toLocaleString(),
-          weight: entry.weight ?? 0,
-          temperature: entry.temperature ?? 0,
-          humidity: entry.humidity ?? 0,
-        }));
-
-        setChartData(formatted);
+        if (!didCancel && Array.isArray(json) && json.length > 0) {
+          const formatted = json.map((entry) => ({
+            ...entry,
+            time: new Date(entry.time).toLocaleString(),
+            weight: entry.weight ?? 0,
+            temperature: entry.temperature ?? 0,
+            humidity: entry.humidity ?? 0,
+          }));
+          setChartData(formatted);
+        } else {
+          console.warn("No full data yet — keeping preview visible.");
+        }
       } catch (err) {
-        console.error("❌ Error fetching scale data:", err);
+        console.error("❌ Error fetching full scale data:", err);
+      } finally {
+        setLoadingFull(false);
       }
-    }
+    };
 
-    fetchData();
+    fetchPreview(); // show preview immediately
+    const delay = setTimeout(fetchFull, 1500); // delay full fetch for UX
+
+    return () => {
+      didCancel = true; // cleanup for unmounted component
+      clearTimeout(delay); // clear delayed full fetch
+    };
   }, [scale_id, selectedResolution, startDate, endDate]);
 
-  // Dynamically calculate min/max values for weight chart scaling
+  // Compute min/max for Y-axis of weight chart
   const weightData = chartData.map((entry) => entry.weight);
   const minWeight = Math.min(...weightData);
   const maxWeight = Math.max(...weightData);
 
   return (
     <div className="p-6">
-      {/* Title */}
+      {/* Page title */}
       <h1 className="text-2xl font-bold mb-6 ml-8">
         📊 Graphs for Scale ID: {scale_id}
       </h1>
 
-      {/* Resolution Selector Buttons */}
+      {/* Resolution toggle buttons */}
       <div className="flex mb-4 ml-8">
         <button
           onClick={() => setSelectedResolution("hourly")}
@@ -106,7 +140,7 @@ export default function ScaleDetailPage({ params }) {
         </button>
       </div>
 
-      {/* Date Pickers for Start and End Date */}
+      {/* Date range pickers */}
       <div className="flex flex-col md:flex-row gap-4 mb-6 ml-8">
         <div>
           <label className="block font-medium mb-1">Start Time:</label>
@@ -130,7 +164,25 @@ export default function ScaleDetailPage({ params }) {
         </div>
       </div>
 
-      {/* First Chart: Temperature over Time */}
+      {/* Loading & status messages */}
+      {!previewFetched && (
+        <div className="text-center text-gray-500 my-4">
+          Loading preview data...
+        </div>
+      )}
+      {loadingFull && (
+        <div className="text-center text-blue-500 my-2">
+          Loading full data...
+        </div>
+      )}
+      {previewFetched && chartData.length > 0 && !loadingFull && (
+        <div className="text-center text-yellow-600 text-sm mb-4">
+          Showing preview data (latest 20 records). Full data will appear if
+          available.
+        </div>
+      )}
+
+      {/* Temperature Line Chart */}
       <ResponsiveContainer width="100%" height={250}>
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -142,7 +194,7 @@ export default function ScaleDetailPage({ params }) {
         </LineChart>
       </ResponsiveContainer>
 
-      {/* Second Chart: Humidity as Bar Chart */}
+      {/* Humidity Bar Chart */}
       <ResponsiveContainer width="100%" height={250} className="mt-8">
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -154,13 +206,15 @@ export default function ScaleDetailPage({ params }) {
         </BarChart>
       </ResponsiveContainer>
 
-      {/* Third Chart: Weight with Dynamic Y-Axis */}
+      {/* Weight Line Chart */}
       <ResponsiveContainer width="100%" height={250} className="mt-8">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="time" />
-          <YAxis domain={[minWeight - 1, maxWeight + 1]} 
-          tickFormatter={(value)=> value.toFixed(2)}/>
+          <YAxis
+            domain={[minWeight - 1, maxWeight + 1]} // Add buffer to y-axis
+            tickFormatter={(v) => v.toFixed(2)} // Format weight nicely
+          />
           <Tooltip />
           <Legend />
           <Line dataKey="weight" stroke="#fb8c00" type="monotone" />
