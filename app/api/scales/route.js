@@ -4,6 +4,7 @@ import clientPromise from "@/lib/mongodb"; // MongoDB client connection helper
 // POST handler: Fetches scale data from external API, saves it to MongoDB
 export async function POST() {
   try {
+    console.log("API_BASE_URL:", process.env.API_BASE_URL);
     // Step 1: Fetch scale data from external API
     const response = await fetch(`${process.env.API_BASE_URL}/user/scale`, {
       headers: {
@@ -56,9 +57,7 @@ export async function POST() {
   } catch (err) {
     // Catch-all error handler for unexpected server issues
     console.error("❌ POST error:", err);
-    return new Response(JSON.stringify({ error: "Internal Server Error" }), {
-      status: 500,
-    });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 

@@ -146,7 +146,7 @@ export async function POST(_req, context) {
   } catch (err) {
     // Catch unexpected errors
     console.error("❌ Error saving scale data:", err);
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
