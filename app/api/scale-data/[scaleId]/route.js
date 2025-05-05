@@ -124,7 +124,6 @@ export async function POST(_req, context) {
   }
 }
 
-
 // GET: Read scale data from MongoDB
 export async function GET(req, context) {
   const { scaleId } = context.params;
