@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Spinner from "../components/Spinner"; // General full-page spinner
 import SpinnerSmall from "../components/SpinnerSmall";
+import Loading from "../components/Loading";
 
 export default function ScalesPage() {
   // State for scale list
@@ -11,6 +12,7 @@ export default function ScalesPage() {
 
   // Loading states
   const [loading, setLoading] = useState(true);
+  const [loadTableData, setLoadTableData] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [perScaleSyncing, setPerScaleSyncing] = useState({}); // Tracks individual scale syncing
 
@@ -40,6 +42,11 @@ export default function ScalesPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleData = (id) => {
+    fetchScaleData(id);
+    setLoadTableData(true);
   };
 
   // Sync metadata, show all scales, then sync each scale’s data in background
@@ -185,7 +192,7 @@ export default function ScalesPage() {
 
       {/* Show loading or scale cards */}
       {loading ? (
-        <p className="text-gray-500">Loading...</p>
+        <Loading title="Loading Page..."/>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {scales.map((scale) => (
@@ -206,7 +213,7 @@ export default function ScalesPage() {
               {/* View Data button with inline spinner */}
               <div className="flex items-center gap-2 mt-4">
                 <button
-                  onClick={() => fetchScaleData(scale.scale_id)}
+                  onClick={() => handleData(scale.scale_id)}
                   className="bg-green-600 text-white px-4 py-2 rounded"
                 >
                   📊 View Data
@@ -283,6 +290,8 @@ export default function ScalesPage() {
           </table>
         </div>
       )}
+
+      {loadTableData && <Loading title="Loading Table Data..." />}
 
       {/* Error message display */}
       {error && (
