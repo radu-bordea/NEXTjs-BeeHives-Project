@@ -117,7 +117,7 @@ export default function ScalesPage() {
 
       if (resolution === "hourly") {
         setScaleDataHourly(data);
-        setLoadTableData(!loadTableData)
+        setLoadTableData(!loadTableData);
       } else {
         setScaleDataDaily(data);
         setLoadTableData(!loadTableData);
