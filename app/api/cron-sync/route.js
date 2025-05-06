@@ -118,7 +118,10 @@ async function syncScaleData(scaleId, resolution, timeStart, timeEnd) {
 export async function POST(req) {
   try {
     // Parse the request body to extract the resolution (daily or hourly)
-    const { resolution } = await req.json(); // This will handle the body passed from EasyCron
+        const body = await req.json();
+        console.log("📦 Received body:", body);
+
+        const { resolution } = body;
 
     if (!resolution || !["hourly", "daily"].includes(resolution)) {
       return NextResponse.json(
