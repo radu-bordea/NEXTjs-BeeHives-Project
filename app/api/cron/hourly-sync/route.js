@@ -1,11 +1,11 @@
-// File: /api/cron/hourly-sync.js
+// File: /app/api/cron/hourly-sync/route.js
 
 export const config = {
   runtime: "edge",
-  schedule: "15 0, 8, 16 * * *", // ⏰ At 6AM, 12PM, and 6PM UTC daily
+  schedule: "15 0,8,16 * * *", // ⏰ At 12:15 AM, 8:15 AM, 4:15 PM UTC daily
 };
 
-export default async function handler(req) {
+export async function GET() {
   try {
     const res = await fetch(`${process.env.BASE_URL}/api/scales`);
     const { scales } = await res.json();
@@ -18,14 +18,13 @@ export default async function handler(req) {
       });
     }
 
-    return new Response(JSON.stringify({ status: "✅ Hourly sync complete" }), {
-      status: 200,
-    });
+    return Response.json({ status: "✅ Hourly sync complete" });
   } catch (err) {
     console.error("❌ Hourly sync error:", err);
-    return new Response(
-      JSON.stringify({ status: "❌ Hourly sync failed", error: err.message }),
+    return Response.json(
+      { status: "❌ Hourly sync failed", error: err.message },
       { status: 500 }
     );
   }
 }
+
