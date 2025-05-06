@@ -41,16 +41,22 @@ export async function GET() {
     const scales = await collection.find().toArray(); // Get all scales from MongoDB
     console.log("Fetched scales:", scales); // Log for verification
 
-    // Step 2: Loop through each scale and fetch data from the API
+    // Step 2: Get today's date (starting from midnight)
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0); // Set the time to 00:00:00
+
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(todayStart.getDate() + 1); // Set to the start of the next day
+
+    const timeStart = Math.floor(todayStart.getTime() / 1000); // Convert to Unix timestamp
+    const timeEnd = Math.floor(tomorrowStart.getTime() / 1000); // Convert to Unix timestamp for tomorrow
+
+    // Use the 'daily' resolution since we are running a daily sync job
+    const resolution = "daily";
+
+    // Step 3: Loop through each scale and fetch data from the API
     for (const scale of scales) {
       const scaleId = scale.scale_id;
-      const timeStart = Math.floor(
-        new Date("2025-03-07T00:00:00Z").getTime() / 1000
-      );
-      const timeEnd = Math.floor(Date.now() / 1000);
-
-      // Use the 'daily' resolution since we are running a daily sync job
-      const resolution = "daily";
 
       const payload = {
         scale: scaleId,
@@ -61,7 +67,7 @@ export async function GET() {
       };
 
       console.log(
-        `📤 Fetching ${resolution.toUpperCase()} data for scale ${scaleId}...`
+        `📤 Fetching ${resolution.toUpperCase()} data for scale ${scaleId} (Today: ${todayStart.toISOString()} → Tomorrow: ${tomorrowStart.toISOString()})...`
       );
 
       const res = await fetch(`${process.env.API_BASE_URL}/user/scale/export`, {
@@ -103,19 +109,34 @@ export async function GET() {
           resolution === "daily" ? "scale_data_daily" : "scale_data_hourly";
         const collection = db.collection(collectionName);
 
-        // Optionally delete existing records to avoid duplication
-        await collection.deleteMany({ scale_id: scaleId });
+        // Only insert data if it doesn't already exist for today
+        const existingData = await collection
+          .find({
+            scale_id: scaleId,
+            time: {
+              $gte: todayStart.toISOString(),
+              $lt: tomorrowStart.toISOString(),
+            },
+          })
+          .toArray();
 
-        if (cleanedData.length > 0) {
-          const inserted = await collection.insertMany(cleanedData);
-          console.log(
-            `✅ ${resolution.toUpperCase()} data saved for scale ${scaleId}: ${
-              inserted.insertedCount
-            } documents`
-          );
+        if (existingData.length === 0) {
+          // Insert only if no data exists for today
+          if (cleanedData.length > 0) {
+            const inserted = await collection.insertMany(cleanedData);
+            console.log(
+              `✅ ${resolution.toUpperCase()} data saved for scale ${scaleId}: ${
+                inserted.insertedCount
+              } documents`
+            );
+          } else {
+            console.warn(
+              `⚠️ No meaningful ${resolution} records for scale ${scaleId} to save`
+            );
+          }
         } else {
-          console.warn(
-            `⚠️ No meaningful ${resolution} records for scale ${scaleId} to save`
+          console.log(
+            `ℹ️ Data already exists for today, skipping insert for scale ${scaleId}`
           );
         }
       } else {
