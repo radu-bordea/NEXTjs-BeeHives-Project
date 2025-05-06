@@ -117,6 +117,16 @@ async function syncScaleData(scaleId, resolution, timeStart, timeEnd) {
 
 export async function POST(req) {
   try {
+    // Parse the request body to extract the resolution (daily or hourly)
+    const { resolution } = await req.json(); // This will handle the body passed from EasyCron
+
+    if (!resolution || !["hourly", "daily"].includes(resolution)) {
+      return NextResponse.json(
+        { error: "Invalid resolution, must be 'hourly' or 'daily'" },
+        { status: 400 }
+      );
+    }
+
     // Get the current time for syncing only today's data onwards
     const timeStart = Math.floor(Date.now() / 1000); // Current timestamp
     const timeEnd = timeStart + 86400; // Set the time end for a full day after now (for the cron job)
@@ -129,17 +139,21 @@ export async function POST(req) {
 
     const results = [];
 
-    // Sync hourly data for each scaleId at the scheduled times
+    // Sync data for each scaleId based on the resolution (hourly or daily)
     for (const scale of scales) {
       const scaleId = scale._id.toString(); // Ensure it's a string
 
-      // Sync hourly data once (cron job runs 3 times a day)
-      console.log("🚀 Triggering Hourly Sync for scaleId:", scaleId);
-      results.push(await syncScaleData(scaleId, "hourly", timeStart, timeEnd));
-
-      // Sync daily data once per day
-      console.log("🚀 Triggering Daily Sync for scaleId:", scaleId);
-      results.push(await syncScaleData(scaleId, "daily", timeStart, timeEnd));
+      if (resolution === "hourly") {
+        // Sync hourly data once (cron job runs 3 times a day)
+        console.log("🚀 Triggering Hourly Sync for scaleId:", scaleId);
+        results.push(
+          await syncScaleData(scaleId, "hourly", timeStart, timeEnd)
+        );
+      } else if (resolution === "daily") {
+        // Sync daily data once per day
+        console.log("🚀 Triggering Daily Sync for scaleId:", scaleId);
+        results.push(await syncScaleData(scaleId, "daily", timeStart, timeEnd));
+      }
     }
 
     return NextResponse.json({ message: "✅ Cron Sync completed!", results });
