@@ -1,37 +1,25 @@
-// File: /app/api/cron/hourly-sync/route.js
-
-// export const config = {
-//   runtime: "edge",
-//   schedule: "15 0,8,16 * * *", // ⏰ At 12:15 AM, 8:15 AM, 4:15 PM UTC daily
-// };
-
-import clientPromise from "@/lib/mongodb"; // MongoDB client connection helper
-
 export async function GET() {
   try {
-    // Debug log to check if the database is connected correctly
-    console.log("Connecting to MongoDB...");
+    console.log("🔁 Hourly cron started...");
+    const baseUrl = process.env.API_BASE_URL;
+    console.log("🌍 API_BASE_URL:", baseUrl);
 
-    // Step 1: Connect to MongoDB and fetch scales from the database
-    const client = await clientPromise;
-    const db = client.db();
-    const collection = db.collection("scales");
-
-    // Fetch scales from MongoDB
-    const scales = await collection.find().toArray();
-    console.log("Scales fetched from database:", scales);
-
-    if (!scales || scales.length === 0) {
-      console.error("❌ No scales found in database");
-      return Response.json({ status: "❌ No scales found" }, { status: 500 });
+    const res = await fetch(`${baseUrl}/api/scales`);
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("❌ Error fetching scales:", errText);
+      return Response.json(
+        { error: "Failed to fetch scales" },
+        { status: 500 }
+      );
     }
 
-    // Step 2: Loop through scales and trigger syncing each scale
-    for (const scale of scales) {
-      console.log(`Syncing scale ${scale.scale_id}...`);
+    const { scales } = await res.json();
+    console.log("📦 Scales fetched:", scales);
 
-      const scaleDataRes = await fetch(
-        `${process.env.API_BASE_URL}/api/scale-data/${scale.scale_id}`,
+    for (const scale of scales) {
+      const syncRes = await fetch(
+        `${baseUrl}/api/scale-data/${scale.scale_id}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -39,21 +27,18 @@ export async function GET() {
         }
       );
 
-      if (!scaleDataRes.ok) {
-        const error = await scaleDataRes.text();
-        console.error(`❌ Error syncing scale ${scale.scale_id}:`, error);
+      if (!syncRes.ok) {
+        const errText = await syncRes.text();
+        console.error(`❌ Sync failed for ${scale.scale_id}:`, errText);
       } else {
-        console.log(`✅ Successfully synced scale ${scale.scale_id}`);
+        const resJson = await syncRes.json();
+        console.log(`✅ Synced ${scale.scale_id}:`, resJson);
       }
     }
 
-    // Step 3: Return success response after syncing all scales
     return Response.json({ status: "✅ Hourly sync complete" });
   } catch (err) {
     console.error("❌ Hourly sync error:", err);
-    return Response.json(
-      { status: "❌ Hourly sync failed", error: err.message },
-      { status: 500 }
-    );
+    return Response.json({ error: err.message }, { status: 500 });
   }
 }
