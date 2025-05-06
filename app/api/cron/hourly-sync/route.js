@@ -1,44 +1,55 @@
+// File: /app/api/cron/hourly-sync/route.js
+
+import clientPromise from "@/lib/mongodb";
+
+// Optional Vercel cron config if using Vercel Cron Jobs
+// export const config = {
+//   runtime: "edge",
+//   schedule: "15 0,8,16 * * *", // 12:15AM, 8:15AM, 4:15PM UTC
+// };
+
 export async function GET() {
   try {
-    console.log("🔁 Hourly cron started...");
-    const baseUrl = process.env.API_BASE_URL;
-    console.log("🌍 API_BASE_URL:", baseUrl);
+    console.log("🔁 Hourly sync started...");
 
-    const res = await fetch(`${baseUrl}/api/scales`);
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error("❌ Error fetching scales:", errText);
-      return Response.json(
-        { error: "Failed to fetch scales" },
-        { status: 500 }
-      );
+    // Connect to MongoDB
+    const client = await clientPromise;
+    const db = client.db();
+    const collection = db.collection("scales");
+
+    const scales = await collection.find().toArray();
+    console.log(`📦 Found ${scales.length} scales in DB`);
+
+    if (!scales.length) {
+      console.warn("⚠️ No scales found in DB");
+      return Response.json({ status: "⚠️ No scales to sync" }, { status: 200 });
     }
 
-    const { scales } = await res.json();
-    console.log("📦 Scales fetched:", scales);
-
     for (const scale of scales) {
-      const syncRes = await fetch(
-        `${baseUrl}/api/scale-data/${scale.scale_id}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ resolution: "hourly" }),
-        }
-      );
+      const url = `${process.env.API_BASE_URL}/api/scale-data/${scale.scale_id}`;
+      console.log(`🔄 Syncing scale ${scale.scale_id} → ${url}`);
+
+      const syncRes = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resolution: "hourly" }),
+      });
 
       if (!syncRes.ok) {
-        const errText = await syncRes.text();
-        console.error(`❌ Sync failed for ${scale.scale_id}:`, errText);
+        const errorText = await syncRes.text();
+        console.error(`❌ Sync failed for ${scale.scale_id}:`, errorText);
       } else {
-        const resJson = await syncRes.json();
-        console.log(`✅ Synced ${scale.scale_id}:`, resJson);
+        const result = await syncRes.json();
+        console.log(`✅ Synced ${scale.scale_id}:`, result);
       }
     }
 
     return Response.json({ status: "✅ Hourly sync complete" });
   } catch (err) {
-    console.error("❌ Hourly sync error:", err);
-    return Response.json({ error: err.message }, { status: 500 });
+    console.error("❌ Cron job error:", err);
+    return Response.json(
+      { status: "❌ Sync failed", error: err.message },
+      { status: 500 }
+    );
   }
 }
