@@ -2,7 +2,7 @@
     "crons": [
         {
           "path": "api/cron/daily-sync",
-          "schedule": "*15 16 * * *" // ⏰ Daily at 16:15 UTC
+          "schedule": "*15 16 * * *" 
         }
     ]
 }
