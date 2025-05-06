@@ -1,0 +1,44 @@
+name: Cron Sync for Scale Data
+
+on:
+  schedule:
+    # Run hourly sync 3 times a day at 00:00, 08:00, and 16:00 UTC
+    - cron: '15 0,14,16 * * *'
+    # Run daily sync once per day at midnight UTC
+    - cron: '0 0 * * *'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout your repository
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Set up Node.js (if needed for your environment)
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      # Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Run the cron-sync function for hourly syncs and daily syncs
+      - name: Trigger Sync API
+        run: |
+          # Trigger hourly sync
+          if [[ "${GITHUB_EVENT_NAME}" == "schedule" ]]; then
+            if [[ "${GITHUB_EVENT_SCHEDULE}" == "0 0,8,16 * * *" ]]; then
+              echo "🔄 Running hourly sync"
+              curl -X POST ${API_URL}/api/cron-sync -d '{"resolution": "hourly"}'
+            elif [[ "${GITHUB_EVENT_SCHEDULE}" == "0 0 * * *" ]]; then
+              echo "📅 Running daily sync"
+              curl -X POST ${API_URL}/api/cron-sync -d '{"resolution": "daily"}'
+            fi
+          fi
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
