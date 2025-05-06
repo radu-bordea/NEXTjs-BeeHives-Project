@@ -31,7 +31,7 @@ export async function GET() {
       console.log(`Syncing scale ${scale.scale_id}...`);
 
       const scaleDataRes = await fetch(
-        `${process.env.BASE_URL}/api/scale-data/${scale.scale_id}`,
+        `${process.env.API_BASE_URL}/api/scale-data/${scale.scale_id}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
