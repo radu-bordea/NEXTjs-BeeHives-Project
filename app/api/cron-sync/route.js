@@ -117,11 +117,11 @@ async function syncScaleData(scaleId, resolution, timeStart, timeEnd) {
 
 export async function POST(req) {
   try {
-    // Parse the request body to extract the resolution (daily or hourly)
-        const body = await req.json();
-        console.log("📦 Received body:", body);
+    const text = await req.text();
+    console.log("Raw request body:", text);
 
-        const { resolution } = body;
+    const body = JSON.parse(text);
+    const { resolution } = body;
 
     if (!resolution || !["hourly", "daily"].includes(resolution)) {
       return NextResponse.json(
