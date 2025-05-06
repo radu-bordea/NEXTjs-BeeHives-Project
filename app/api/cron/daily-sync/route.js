@@ -11,7 +11,7 @@ export async function GET() {
     const { scales } = await res.json();
 
     for (const scale of scales) {
-      await fetch(`${process.env.BASE_URL}/api/scale-data/${scale.scale_id}`, {
+      await fetch(`${process.env.API_BASE_URL}/api/scale-data/${scale.scale_id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resolution: "daily" }),
