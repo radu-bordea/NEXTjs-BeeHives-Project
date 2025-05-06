@@ -129,25 +129,13 @@ export async function POST(req) {
 
     const results = [];
 
-    // Sync hourly data for each scaleId 3 times a day
+    // Sync hourly data for each scaleId at the scheduled times
     for (const scale of scales) {
       const scaleId = scale._id.toString(); // Ensure it's a string
 
-      // Sync hourly data three times a day (you could adjust timeStart and timeEnd for each)
-      for (let i = 0; i < 3; i++) {
-        const timeOffset = i * 8 * 60 * 60; // Offset by 8 hours for each run
-        const adjustedTimeStart = timeStart + timeOffset;
-        const adjustedTimeEnd = adjustedTimeStart + 8 * 60 * 60; // 8-hour window
-        console.log("🚀 Triggering Hourly Sync for scaleId:", scaleId);
-        results.push(
-          await syncScaleData(
-            scaleId,
-            "hourly",
-            adjustedTimeStart,
-            adjustedTimeEnd
-          )
-        );
-      }
+      // Sync hourly data once (cron job runs 3 times a day)
+      console.log("🚀 Triggering Hourly Sync for scaleId:", scaleId);
+      results.push(await syncScaleData(scaleId, "hourly", timeStart, timeEnd));
 
       // Sync daily data once per day
       console.log("🚀 Triggering Daily Sync for scaleId:", scaleId);
