@@ -1,40 +1,59 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import useScales from "../../hooks/useScales"; // Custom SWR hook for scale metadata
-import { mutate } from "swr";
-import Spinner from "../components/Spinner"; // Full-page spinner
-import SpinnerSmall from "../components/SpinnerSmall"; // Inline spinner
-import Loading from "../components/Loading"; // Title-based loading state
+import Spinner from "../components/Spinner"; // General full-page spinner
+import SpinnerSmall from "../components/SpinnerSmall";
+import Loading from "../components/Loading";
 
 export default function ScalesPage() {
-  // Directly call useScales hook here
-  const { scales, isLoading, isError } = useScales(); // Fetch scale metadata
-  const [loadTableData, setLoadTableData] = useState(false); // Show/hide data table loading spinner
-  const [syncing, setSyncing] = useState(false); // Full sync state
-  const [perScaleSyncing, setPerScaleSyncing] = useState({}); // Track sync per scale
+  // State for scale list
+  const [scales, setScales] = useState([]);
 
-  const [selectedScaleId, setSelectedScaleId] = useState(null); // Which scale's data to display
-  const [selectedResolution, setSelectedResolution] = useState("hourly"); // hourly or daily view
+  // Loading states
+  const [loading, setLoading] = useState(true);
+  const [loadTableData, setLoadTableData] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [perScaleSyncing, setPerScaleSyncing] = useState({}); // Tracks individual scale syncing
 
+  // State for currently selected scale and resolution
+  const [selectedScaleId, setSelectedScaleId] = useState(null);
+  const [selectedResolution, setSelectedResolution] = useState("hourly");
+
+  // Measurement data
   const [scaleDataHourly, setScaleDataHourly] = useState(null);
   const [scaleDataDaily, setScaleDataDaily] = useState(null);
 
-  const [error, setError] = useState(null); // Any fetch error
+  // Error handling
+  const [error, setError] = useState(null);
+
   const router = useRouter();
 
-  // Load measurement data for selected scale
-  const handleData = (id) => {
-    fetchScaleData(id);
-    setLoadTableData(true); // Triggers table spinner
+  // Fetch scale metadata from backend
+  const fetchScales = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/scales");
+      const data = await res.json();
+      setScales(data.scales || []);
+    } catch (err) {
+      console.error("❌ Error loading scales:", err);
+      setError("Failed to load scales.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // SYNC scales metadata and then fire background sync of individual scale data
+  const handleData = (id) => {
+    fetchScaleData(id);
+    setLoadTableData(true);
+  };
+
+  // Sync metadata, show all scales, then sync each scale’s data in background
   const syncScales = async () => {
     setSyncing(true);
     try {
-      // POST request to trigger scale metadata sync
+      // Sync metadata
       const res = await fetch("/api/scales", {
         method: "POST",
         headers: {
@@ -42,15 +61,19 @@ export default function ScalesPage() {
           Accept: "application/json",
         },
       });
-
       const data = await res.json();
 
       if (res.ok) {
-        // Revalidate scale list with SWR
-        await mutate("/api/scales");
+        // alert("✅ Synced scale metadata!");
 
-        // Background sync: loop through and sync data per scale
-        for (const scale of data.scales || []) {
+        // Load updated scale list
+        const refreshedRes = await fetch("/api/scales");
+        const { scales: freshScales } = await refreshedRes.json();
+        setScales(freshScales);
+        setLoading(false);
+
+        // Sync data (hourly + daily) for each scale in background
+        freshScales.forEach(async (scale) => {
           setPerScaleSyncing((prev) => ({
             ...prev,
             [scale.scale_id]: true,
@@ -65,7 +88,7 @@ export default function ScalesPage() {
             if (!scaleDataRes.ok) {
               let errorMessage = "Unknown error";
               try {
-                const errorData = await scaleDataRes.json(); // Defensive parse
+                const errorData = await scaleDataRes.json(); // 🛡️ guarded
                 errorMessage = errorData.error || errorMessage;
               } catch (e) {
                 console.warn(
@@ -73,6 +96,7 @@ export default function ScalesPage() {
                   e
                 );
               }
+
               console.error(
                 `❌ Failed to sync data for scale ${scale.scale_id}: ${errorMessage}`
               );
@@ -85,7 +109,7 @@ export default function ScalesPage() {
               [scale.scale_id]: false,
             }));
           }
-        }
+        });
       } else {
         setError(`Sync failed: ${data.error}`);
       }
@@ -97,7 +121,7 @@ export default function ScalesPage() {
     }
   };
 
-  // Load measurement data for one scale (hourly or daily)
+  // Fetch measurement data for a specific scale and resolution
   const fetchScaleData = async (scaleId, resolution = "hourly") => {
     setSelectedScaleId(scaleId);
     setSelectedResolution(resolution);
@@ -106,25 +130,27 @@ export default function ScalesPage() {
     setError(null);
 
     try {
-      // Try full dataset first
       const res = await fetch(
         `/api/scale-data/${scaleId}?resolution=${resolution}`
       );
+
       if (!res.ok) throw new Error("Full data not yet available");
 
       const data = await res.json();
-      if (data.length === 0) throw new Error("No full data yet");
+      if (data.length === 0) {
+        throw new Error("No full data yet");
+      }
 
       if (resolution === "hourly") {
         setScaleDataHourly(data);
-        setLoadTableData(!loadTableData);
       } else {
         setScaleDataDaily(data);
-        setLoadTableData(!loadTableData);
       }
     } catch (err) {
-      console.warn(`⚠️ Full data missing for ${scaleId}, loading fallback...`);
-      // Try preview fallback if full data fails
+      console.warn(
+        `⚠️ Full data missing for scale ${scaleId}, trying preview...`
+      );
+
       try {
         const fallbackRes = await fetch(
           `/api/scale-data/${scaleId}/latest?resolution=${resolution}&limit=20`
@@ -136,19 +162,26 @@ export default function ScalesPage() {
           setScaleDataDaily(fallback);
         }
       } catch (fallbackErr) {
-        console.error("❌ Fallback failed too:", fallbackErr);
+        console.error("❌ Failed to load even fallback preview:", fallbackErr);
         setError("Failed to load any data for this scale.");
       }
     }
   };
 
+  // Initial load of scale list
+  useEffect(() => {
+    fetchScales();
+  }, []);
+
   return (
     <div className="relative p-6">
-      {/* Full-screen spinner while syncing all scales */}
+      {/* Full page overlay spinner when syncing all scales */}
       {syncing && <Spinner />}
 
-      {/* Header and Sync Button */}
+      {/* Page header */}
       <h1 className="text-2xl font-bold mb-4">🐝 Beehive Scales</h1>
+
+      {/* Button to trigger sync */}
       <button
         onClick={syncScales}
         disabled={syncing}
@@ -157,11 +190,9 @@ export default function ScalesPage() {
         {syncing ? "Syncing..." : "🔄 Sync Scales from API"}
       </button>
 
-      {/* Loading states or scale list */}
-      {isLoading ? (
+      {/* Show loading or scale cards */}
+      {loading ? (
         <Loading title="Loading Page..." />
-      ) : isError ? (
-        <div className="text-red-500">❌ Failed to load scales.</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {scales.map((scale) => (
@@ -179,7 +210,7 @@ export default function ScalesPage() {
                 Hardware Key: {scale.hardware_key}
               </p>
 
-              {/* Load data + show sync spinner */}
+              {/* View Data button with inline spinner */}
               <div className="flex items-center gap-2 mt-4">
                 <button
                   onClick={() => handleData(scale.scale_id)}
@@ -190,10 +221,10 @@ export default function ScalesPage() {
                 {perScaleSyncing[scale.scale_id] && <SpinnerSmall />}
               </div>
 
-              {/* Navigate to charts page */}
+              {/* View charts button */}
               <button
                 onClick={() => router.push(`/scales/${scale.scale_id}`)}
-                className="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                className="mt-2 bg-blue-600 text-white px-4 py-2 rounded  hover:bg-blue-700 transition"
               >
                 📈 View Charts
               </button>
@@ -202,12 +233,12 @@ export default function ScalesPage() {
         </div>
       )}
 
-      {/* Display measurement data table */}
+      {/* Show selected scale’s data if available */}
       {(scaleDataHourly || scaleDataDaily) && (
         <div className="mt-8">
           <h3 className="text-xl font-semibold mb-4">Measurement Data</h3>
 
-          {/* Toggle hourly/daily */}
+          {/* Resolution toggle buttons */}
           <div className="flex mb-4">
             <button
               onClick={() => fetchScaleData(selectedScaleId, "hourly")}
@@ -231,7 +262,7 @@ export default function ScalesPage() {
             </button>
           </div>
 
-          {/* Table of values */}
+          {/* Measurement table */}
           <table className="table-auto w-full border">
             <thead>
               <tr>
@@ -245,27 +276,24 @@ export default function ScalesPage() {
               {(selectedResolution === "hourly"
                 ? scaleDataHourly
                 : scaleDataDaily
-              )
-                ?.sort((a, b) => new Date(b.time) - new Date(a.time)) // Sort by time, newest first
-                .map((item, index) => (
-                  <tr key={index}>
-                    <td className="border px-4 py-2">
-                      {item.time ? new Date(item.time).toLocaleString() : "N/A"}
-                    </td>
-                    <td className="border px-4 py-2">{item.weight}</td>
-                    <td className="border px-4 py-2">{item.temperature}</td>
-                    <td className="border px-4 py-2">{item.humidity}</td>
-                  </tr>
-                ))}
+              )?.map((item, index) => (
+                <tr key={index}>
+                  <td className="border px-4 py-2">
+                    {item.time ? new Date(item.time).toLocaleString() : "N/A"}
+                  </td>
+                  <td className="border px-4 py-2">{item.weight}</td>
+                  <td className="border px-4 py-2">{item.temperature}</td>
+                  <td className="border px-4 py-2">{item.humidity}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       )}
 
-      {/* Table data spinner */}
       {loadTableData && <Loading title="Loading Table Data..." />}
 
-      {/* Display any top-level errors */}
+      {/* Error message display */}
       {error && (
         <div className="mt-4 text-red-500">
           <p>{error}</p>
