@@ -1,36 +1,6 @@
 import clientPromise from "@/lib/mongodb";
 import { NextResponse } from "next/server";
-
-// Helper: Clean and filter each item (only keep if at least one key field is non-zero)
-function cleanAndFilter(item, scaleId) {
-  const cleaned = {
-    time: item.time,
-    scale_id: scaleId,
-  };
-
-  let hasData = false;
-
-  const fieldsToCheck = [
-    "weight",
-    "yield",
-    "temperature",
-    "brood",
-    "humidity",
-    "rain",
-    "wind_speed",
-    "wind_direction",
-  ];
-
-  for (const key of fieldsToCheck) {
-    const val = Number(item[key]);
-    if (!isNaN(val) && val !== 0) {
-      cleaned[key] = val;
-      hasData = true;
-    }
-  }
-
-  return hasData ? cleaned : null;
-}
+import cleanAndFilter from "@/utils/cleanAndFilter";
 
 export async function POST(_req, context) {
   const { scaleId } = context.params;

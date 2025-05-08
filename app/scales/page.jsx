@@ -276,7 +276,8 @@ export default function ScalesPage() {
               {(selectedResolution === "hourly"
                 ? scaleDataHourly
                 : scaleDataDaily
-              )?.map((item, index) => (
+              )?.sort((a,b) => new Date(b.time) - new Date(a.time)) // Sort by time, newest first
+              .map((item, index) => (
                 <tr key={index}>
                   <td className="border px-4 py-2">
                     {item.time ? new Date(item.time).toLocaleString() : "N/A"}
