@@ -1,8 +1,20 @@
 {
-    "crons": [
-        {
-          "path": "/api/cron/daily-sync",
-          "schedule": "0 17 * * *" 
-        }
-    ]
+  "crons": [
+    {
+      "path": "/api/cron/hourly-sync",
+      "schedule": "15 0 * * *"
+    },
+    {
+      "path": "/api/cron/hourly-sync",
+      "schedule": "15 8 * * *"
+    },
+    {
+      "path": "/api/cron/hourly-sync",
+      "schedule": "15 16 * * *"
+    },
+    {
+      "path": "/api/cron/daily-sync",
+      "schedule": "0 17 * * *"
+    }
+  ]
 }

@@ -1,54 +1,113 @@
-// File: /app/api/cron/hourly-sync/route.js
-
-import clientPromise from "@/lib/mongodb";
-
-// Optional Vercel cron config if using Vercel Cron Jobs
-// export const config = {
-//   runtime: "edge",
-//   schedule: "15 0,8,16 * * *", // 12:15AM, 8:15AM, 4:15PM UTC
-// };
+// app/api/cron/hourly-sync/route.js
+import clientPromise from "@/lib/mongodb"; // MongoDB client connection helper
+import cleanAndFilter from "@/utils/cleanAndFilter"; // Cleans and filters fetched data
 
 export async function GET() {
   try {
-    console.log("🔁 Hourly sync started...");
-
-    // Connect to MongoDB
+    // 1. Connect to MongoDB and fetch all registered scales
     const client = await clientPromise;
     const db = client.db();
-    const collection = db.collection("scales");
+    const scalesCollection = db.collection("scales");
+    const scales = await scalesCollection.find().toArray();
+    console.log(
+      "📦 Fetched scales:",
+      scales.map((s) => s.scale_id)
+    );
 
-    const scales = await collection.find().toArray();
-    console.log(`📦 Found ${scales.length} scales in DB`);
+    // 2. Set time window for hourly sync (previous hour until cron time)
+    const now = new Date(); // Assume this is 00:15 / 08:15 / 16:15 UTC
+    now.setUTCMinutes(15, 0, 0); // Set to exact trigger time (e.g., 08:15:00)
 
-    if (!scales.length) {
-      console.warn("⚠️ No scales found in DB");
-      return Response.json({ status: "⚠️ No scales to sync" }, { status: 200 });
-    }
+    const end = new Date(now);
+    const start = new Date(now);
+    start.setUTCHours(now.getUTCHours() - 1); // One-hour range
 
-    for (const scale of scales) {
-      const url = `${process.env.API_BASE_URL}/api/scale-data/${scale.scale_id}`;
-      console.log(`🔄 Syncing scale ${scale.scale_id} → ${url}`);
+    const timeStart = Math.floor(start.getTime() / 1000); // Start of the hour (UNIX)
+    const timeEnd = Math.floor(end.getTime() / 1000); // End of the hour (UNIX)
+    const resolution = "hourly";
 
-      const syncRes = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resolution: "hourly" }),
-      });
+    // 3. Loop through each scale to fetch and store data
+    for (const { scale_id: scaleId } of scales) {
+      const payload = {
+        scale: scaleId,
+        time_start: timeStart,
+        time_end: timeEnd,
+        time_resolution: resolution,
+        format: "json",
+      };
 
-      if (!syncRes.ok) {
-        const errorText = await syncRes.text();
-        console.error(`❌ Sync failed for ${scale.scale_id}:`, errorText);
+      console.log(`📤 Fetching HOURLY data for scale ${scaleId}...`);
+
+      const response = await fetch(
+        `${process.env.API_BASE_URL}/user/scale/export`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.API_TOKEN}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error(`❌ Error fetching hourly data for ${scaleId}:`, error);
+        continue;
+      }
+
+      const { data } = await response.json();
+      console.log(`📥 Received ${data?.length || 0} items for ${scaleId}`);
+
+      if (!Array.isArray(data) || data.length === 0) {
+        console.warn(`⚠️ No data for ${scaleId}, skipping`);
+        continue;
+      }
+
+      const cleanedData = data
+        .map((item) => cleanAndFilter(item, scaleId))
+        .filter(Boolean);
+
+      console.log(`✅ Cleaned data: ${cleanedData.length} items`);
+
+      const hourlyCollection = db.collection("scale_data_hourly");
+
+      // 4. Check for existing entries in the same hour
+      const existing = await hourlyCollection
+        .find({
+          scale_id: scaleId,
+          time: {
+            $gte: start.toISOString(),
+            $lt: end.toISOString(),
+          },
+        })
+        .toArray();
+
+      if (existing.length > 0) {
+        console.log(
+          `ℹ️ Hourly data already exists for ${scaleId}, skipping insert`
+        );
+        continue;
+      }
+
+      // 5. Insert cleaned data
+      if (cleanedData.length > 0) {
+        const insertResult = await hourlyCollection.insertMany(cleanedData);
+        console.log(
+          `📝 Inserted ${insertResult.insertedCount} records for ${scaleId}`
+        );
       } else {
-        const result = await syncRes.json();
-        console.log(`✅ Synced ${scale.scale_id}:`, result);
+        console.warn(`⚠️ No valid data to insert for ${scaleId}`);
       }
     }
 
-    return Response.json({ status: "✅ Hourly sync complete" });
+    return new Response(JSON.stringify({ status: "✅ Hourly sync complete" }), {
+      status: 200,
+    });
   } catch (err) {
-    console.error("❌ Cron job error:", err);
-    return Response.json(
-      { status: "❌ Sync failed", error: err.message },
+    console.error("❌ Error during hourly sync:", err);
+    return new Response(
+      JSON.stringify({ status: "❌ Hourly sync failed", error: err.message }),
       { status: 500 }
     );
   }
