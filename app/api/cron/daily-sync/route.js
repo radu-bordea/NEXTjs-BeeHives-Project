@@ -14,11 +14,40 @@ export async function GET() {
 
     // 2. Define the time range for today in UTC
     const now = new Date();
-    const todayStart = new Date();
-    todayStart.setUTCHours(11, 0, 0, 0); // 00:00 UTC today
 
-    const timeStart = Math.floor(todayStart.getTime() / 1000); // UNIX seconds
-    const timeEnd = Math.floor(now.getTime() / 1000); // Now (UTC)
+    // Get yesterday at 00:00 UTC
+    const yesterdayStart = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() - 1,
+        0,
+        0,
+        0
+      )
+    );
+
+    // Get today at 00:00 UTC
+    const todayStart = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        0,
+        0,
+        0
+      )
+    );
+
+    const timeStart = Math.floor(yesterdayStart.getTime() / 1000);
+    const timeEnd = Math.floor(todayStart.getTime() / 1000);
+
+    console.log("⏱ Corrected payload times", {
+      timeStart,
+      timeEnd,
+      readableStart: yesterdayStart.toISOString(),
+      readableEnd: todayStart.toISOString(),
+    });
 
     const resolution = "daily";
 
@@ -33,7 +62,6 @@ export async function GET() {
       };
 
       console.log(`⏱ Payload for ${scaleId}:`, payload);
-
 
       console.log(`📤 Fetching DAILY data for scale ${scaleId}...`);
 
