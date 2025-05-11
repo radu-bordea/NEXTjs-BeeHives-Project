@@ -14,14 +14,8 @@ export async function GET() {
     );
 
     // 2. Define the time range for today in UNIX timestamps (UTC)
-    const todayStart = new Date();
-    todayStart.setUTCHours(10, 15, 0, 0); // Start of day: 10:15:00 UTC
-
-    const tomorrowStart = new Date(todayStart);
-    tomorrowStart.setUTCDate(todayStart.getUTCDate() + 1); // Start of next day: 00:00:00 UTC
-
-    const timeStart = Math.floor(todayStart.getTime() / 1000); // UNIX start
-    const timeEnd = Math.floor(tomorrowStart.getTime() / 1000); // UNIX end
+    const timeStart = Math.floor(new Date().getTime() / 1000); // UNIX start
+    const timeEnd = Math.floor(timeStart / 1000); // Start of next day
 
     const resolution = "daily"; // Daily data fetch
 
@@ -49,7 +43,6 @@ export async function GET() {
         }
       );
 
-      // If request fails, log the error and skip this scale
       if (!response.ok) {
         const error = await response.text();
         console.error(`❌ Error fetching daily data for ${scaleId}:`, error);
@@ -67,7 +60,8 @@ export async function GET() {
 
       const cleanedData = data
         .map((item) => cleanAndFilter(item, scaleId))
-        .filter(Boolean);
+        .filter(Boolean); // Remove invalid or null entries
+
       console.log(`✅ Cleaned data: ${cleanedData.length} items`);
 
       const dailyCollection = db.collection("scale_data_daily");
