@@ -1,25 +1,28 @@
-import clientPromise from "@/lib/mongodb"; // MongoDB client connection helper
-import cleanAndFilter from "@/utils/cleanAndFilter"; // Cleans and filters fetched data
+import clientPromise from "@/lib/mongodb";
+import cleanAndFilter from "@/utils/cleanAndFilter";
 
 export async function GET() {
   try {
-    // 1. Connect to MongoDB and get the list of all registered scales
+    // 1. Connect to MongoDB and fetch all scale IDs
     const client = await clientPromise;
     const db = client.db();
-    const scalesCollection = db.collection("scales");
-    const scales = await scalesCollection.find().toArray();
+    const scales = await db.collection("scales").find().toArray();
     console.log(
       "📦 Fetched scales:",
       scales.map((s) => s.scale_id)
     );
 
-    // 2. Define the time range for today in UNIX timestamps (UTC)
-    const timeStart = Math.floor(new Date().getTime() / 1000); // UNIX start
-    const timeEnd = Math.floor(timeStart / 1000); // Start of next day
+    // 2. Define the time range for today in UTC
+    const now = new Date();
+    const todayStart = new Date();
+    todayStart.setUTCHours(11, 0, 0, 0); // 00:00 UTC today
 
-    const resolution = "daily"; // Daily data fetch
+    const timeStart = Math.floor(todayStart.getTime() / 1000); // UNIX seconds
+    const timeEnd = Math.floor(now.getTime() / 1000); // Now (UTC)
 
-    // 3. Loop over each scale and sync data
+    const resolution = "daily";
+
+    // 3. Loop through each scale
     for (const { scale_id: scaleId } of scales) {
       const payload = {
         scale: scaleId,
@@ -45,11 +48,10 @@ export async function GET() {
 
       if (!response.ok) {
         const error = await response.text();
-        console.error(`❌ Error fetching daily data for ${scaleId}:`, error);
+        console.error(`❌ Error fetching data for ${scaleId}:`, error);
         continue;
       }
 
-      // 4. Process the returned data
       const { data } = await response.json();
       console.log(`📥 Received ${data?.length || 0} items for ${scaleId}`);
 
@@ -60,19 +62,18 @@ export async function GET() {
 
       const cleanedData = data
         .map((item) => cleanAndFilter(item, scaleId))
-        .filter(Boolean); // Remove invalid or null entries
-
+        .filter(Boolean);
       console.log(`✅ Cleaned data: ${cleanedData.length} items`);
 
       const dailyCollection = db.collection("scale_data_daily");
 
-      // 5. Check if data for today already exists to avoid duplicates
+      // 4. Avoid duplicate inserts
       const existing = await dailyCollection
         .find({
           scale_id: scaleId,
           time: {
             $gte: todayStart.toISOString(),
-            $lt: tomorrowStart.toISOString(),
+            $lt: now.toISOString(),
           },
         })
         .toArray();
@@ -82,24 +83,20 @@ export async function GET() {
         continue;
       }
 
-      // 6. Insert cleaned data into the database
-      if (cleanedData.length > 0) {
-        const insertResult = await dailyCollection.insertMany(cleanedData);
-        console.log(
-          `📝 Inserted ${insertResult.insertedCount} records for ${scaleId}`
-        );
-      } else {
-        console.warn(`⚠️ No valid data to insert for ${scaleId}`);
-      }
+      // 5. Insert cleaned data
+      const insertResult = await dailyCollection.insertMany(cleanedData);
+      console.log(
+        `📝 Inserted ${insertResult.insertedCount} records for ${scaleId}`
+      );
     }
 
     return new Response(JSON.stringify({ status: "✅ Daily sync complete" }), {
       status: 200,
     });
   } catch (err) {
-    console.error("❌ Error during daily sync:", err);
+    console.error("❌ Error during sync:", err);
     return new Response(
-      JSON.stringify({ status: "❌ Daily sync failed", error: err.message }),
+      JSON.stringify({ status: "❌ Sync failed", error: err.message }),
       { status: 500 }
     );
   }
