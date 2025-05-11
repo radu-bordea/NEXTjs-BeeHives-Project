@@ -32,6 +32,9 @@ export async function GET() {
         format: "json",
       };
 
+      console.log(`⏱ Payload for ${scaleId}:`, payload);
+
+
       console.log(`📤 Fetching DAILY data for scale ${scaleId}...`);
 
       const response = await fetch(
