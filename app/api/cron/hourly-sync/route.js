@@ -1,32 +1,57 @@
-// app/api/cron/hourly-sync/route.js
-import clientPromise from "@/lib/mongodb"; // MongoDB client connection helper
-import cleanAndFilter from "@/utils/cleanAndFilter"; // Cleans and filters fetched data
+import clientPromise from "@/lib/mongodb";
+import cleanAndFilter from "@/utils/cleanAndFilter";
 
 export async function GET() {
   try {
-    // 1. Connect to MongoDB and fetch all registered scales
+    // 1. Connect to MongoDB and fetch all scale IDs
     const client = await clientPromise;
     const db = client.db();
-    const scalesCollection = db.collection("scales");
-    const scales = await scalesCollection.find().toArray();
+    const scales = await db.collection("scales").find().toArray();
     console.log(
       "📦 Fetched scales:",
       scales.map((s) => s.scale_id)
     );
 
-    // 2. Set time window for hourly sync (previous hour until cron time)
-    const now = new Date(); // Assume this is 00:15 / 08:15 / 16:15 UTC
-    now.setUTCMinutes(15, 0, 0); // Set to exact trigger time (e.g., 08:15:00)
+    // 2. Define the time range for today in UTC
+    const now = new Date();
 
-    const end = new Date(now);
-    const start = new Date(now);
-    start.setUTCHours(now.getUTCHours() - 1); // One-hour range
+    // Get yesterday at 00:00 UTC
+    const yesterdayStart = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() - 1,
+        0,
+        0,
+        0
+      )
+    );
 
-    const timeStart = Math.floor(start.getTime() / 1000); // Start of the hour (UNIX)
-    const timeEnd = Math.floor(end.getTime() / 1000); // End of the hour (UNIX)
+    // Get today at 00:00 UTC
+    const todayStart = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        0,
+        0,
+        0
+      )
+    );
+
+    const timeStart = Math.floor(yesterdayStart.getTime() / 1000);
+    const timeEnd = Math.floor(todayStart.getTime() / 1000);
+
+    console.log("⏱ Corrected payload times", {
+      timeStart,
+      timeEnd,
+      readableStart: yesterdayStart.toISOString(),
+      readableEnd: todayStart.toISOString(),
+    });
+
     const resolution = "hourly";
 
-    // 3. Loop through each scale to fetch and store data
+    // 3. Loop through each scale
     for (const { scale_id: scaleId } of scales) {
       const payload = {
         scale: scaleId,
@@ -35,6 +60,8 @@ export async function GET() {
         time_resolution: resolution,
         format: "json",
       };
+
+      console.log(`⏱ Payload for ${scaleId}:`, payload);
 
       console.log(`📤 Fetching HOURLY data for scale ${scaleId}...`);
 
@@ -52,7 +79,7 @@ export async function GET() {
 
       if (!response.ok) {
         const error = await response.text();
-        console.error(`❌ Error fetching hourly data for ${scaleId}:`, error);
+        console.error(`❌ Error fetching data for ${scaleId}:`, error);
         continue;
       }
 
@@ -67,38 +94,31 @@ export async function GET() {
       const cleanedData = data
         .map((item) => cleanAndFilter(item, scaleId))
         .filter(Boolean);
-
       console.log(`✅ Cleaned data: ${cleanedData.length} items`);
 
       const hourlyCollection = db.collection("scale_data_hourly");
 
-      // 4. Check for existing entries in the same hour
+      // 4. Avoid duplicate inserts
       const existing = await hourlyCollection
         .find({
           scale_id: scaleId,
           time: {
-            $gte: start.toISOString(),
-            $lt: end.toISOString(),
+            $gte: todayStart.toISOString(),
+            $lt: now.toISOString(),
           },
         })
         .toArray();
 
       if (existing.length > 0) {
-        console.log(
-          `ℹ️ Hourly data already exists for ${scaleId}, skipping insert`
-        );
+        console.log(`ℹ️ Data already exists for ${scaleId}, skipping insert`);
         continue;
       }
 
       // 5. Insert cleaned data
-      if (cleanedData.length > 0) {
-        const insertResult = await hourlyCollection.insertMany(cleanedData);
-        console.log(
-          `📝 Inserted ${insertResult.insertedCount} records for ${scaleId}`
-        );
-      } else {
-        console.warn(`⚠️ No valid data to insert for ${scaleId}`);
-      }
+      const insertResult = await hourlyCollection.insertMany(cleanedData);
+      console.log(
+        `📝 Inserted ${insertResult.insertedCount} records for ${scaleId}`
+      );
     }
 
     return new Response(JSON.stringify({ status: "✅ Hourly sync complete" }), {
