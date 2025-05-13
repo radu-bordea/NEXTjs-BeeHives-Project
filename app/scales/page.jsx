@@ -268,6 +268,7 @@ export default function ScalesPage() {
               <tr>
                 <th className="border px-4 py-2">Time</th>
                 <th className="border px-4 py-2">Weight</th>
+                <th className="border px-4 py-2">Yield</th>
                 <th className="border px-4 py-2">Temperature</th>
                 <th className="border px-4 py-2">Humidity</th>
               </tr>
@@ -283,6 +284,7 @@ export default function ScalesPage() {
                     {item.time ? new Date(item.time).toLocaleString() : "N/A"}
                   </td>
                   <td className="border px-4 py-2">{item.weight}</td>
+                  <td className="border px-4 py-2">{item.yield}</td>
                   <td className="border px-4 py-2">{item.temperature}</td>
                   <td className="border px-4 py-2">{item.humidity}</td>
                 </tr>
