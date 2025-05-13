@@ -51,6 +51,7 @@ export default function ScaleDetailPage({ params }) {
             ...entry,
             time: new Date(entry.time).toLocaleString(), // format timestamp
             weight: entry.weight ?? 0,
+            yield: entry.yield ?? 0,
             temperature: entry.temperature ?? 0,
             humidity: entry.humidity ?? 0,
           }));
@@ -81,6 +82,7 @@ export default function ScaleDetailPage({ params }) {
             ...entry,
             time: new Date(entry.time).toLocaleString(),
             weight: entry.weight ?? 0,
+            yield: entry.yield ?? 0,
             temperature: entry.temperature ?? 0,
             humidity: entry.humidity ?? 0,
           }));
@@ -182,6 +184,32 @@ export default function ScaleDetailPage({ params }) {
         </div>
       )}
 
+      {/* Weight Line Chart */}
+      <ResponsiveContainer width="100%" height={250} className="mt-8">
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="time" />
+          <YAxis
+            domain={[minWeight - 1, maxWeight + 1]} // Add buffer to y-axis
+            tickFormatter={(v) => v.toFixed(2)} // Format weight nicely
+          />
+          <Tooltip />
+          <Legend />
+          <Line dataKey="weight" stroke="#fb8c00" type="monotone" />
+        </LineChart>
+      </ResponsiveContainer>
+
+      {/* Yield Line Chart */}
+      <ResponsiveContainer width="100%" height={250} className="mt-8">
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="yield" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+        </LineChart>
+      </ResponsiveContainer>
+
       {/* Temperature Line Chart */}
       <ResponsiveContainer width="100%" height={250}>
         <LineChart data={chartData}>
@@ -204,21 +232,6 @@ export default function ScaleDetailPage({ params }) {
           <Legend />
           <Bar dataKey="humidity" fill="#1e88e5" />
         </BarChart>
-      </ResponsiveContainer>
-
-      {/* Weight Line Chart */}
-      <ResponsiveContainer width="100%" height={250} className="mt-8">
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="time" />
-          <YAxis
-            domain={[minWeight - 1, maxWeight + 1]} // Add buffer to y-axis
-            tickFormatter={(v) => v.toFixed(2)} // Format weight nicely
-          />
-          <Tooltip />
-          <Legend />
-          <Line dataKey="weight" stroke="#fb8c00" type="monotone" />
-        </LineChart>
       </ResponsiveContainer>
     </div>
   );
