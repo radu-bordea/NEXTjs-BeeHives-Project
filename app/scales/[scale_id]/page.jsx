@@ -203,10 +203,11 @@ export default function ScaleDetailPage({ params }) {
       <ResponsiveContainer width="100%" height={250} className="mt-8">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="yield" />
+          <XAxis dataKey="time" />
           <YAxis />
           <Tooltip />
           <Legend />
+          <Line dataKey="yield" stroke="#43a047" type="monotone" />
         </LineChart>
       </ResponsiveContainer>
 
