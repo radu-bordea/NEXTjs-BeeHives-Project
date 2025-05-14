@@ -14,9 +14,7 @@ export default function Navbar() {
       <div className="flex items-center space-x-6">
         <Link
           href="/"
-          className={` ${
-            isActive("/") ? "text-blue-600" : "text-gray-800"
-          }`}
+          className={` ${isActive("/") ? "text-blue-600" : "text-gray-800"}`}
         >
           Home
         </Link>
@@ -43,6 +41,14 @@ export default function Navbar() {
           }`}
         >
           About
+        </Link>
+        <Link
+          href="/admin"
+          className={`hover:text-blue-600 ${
+            isActive("/admin") ? "text-blue-600" : "text-gray-800"
+          }`}
+        >
+          Admin
         </Link>
       </div>
 
