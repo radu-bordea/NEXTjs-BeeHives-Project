@@ -70,6 +70,7 @@ const AdminPage = () => {
           <thead className="bg-gray-100 text-left">
             <tr>
               <th className="px-4 py-2 border">Scale ID</th>
+              <th className="px-4 py-2 border">Serial Number</th>
               <th className="px-4 py-2 border">Name</th>
               <th className="px-4 py-2 border">Actions</th>
             </tr>
@@ -78,6 +79,7 @@ const AdminPage = () => {
             {scales.map((scale) => (
               <tr key={scale.scale_id} className="border-t">
                 <td className="px-4 py-2 border">{scale.scale_id}</td>
+                <td className="px-4 py-2 border">{scale.serial_number}</td>
                 <td className="px-4 py-2 border text-gray-800">
                   {scale.name || (
                     <span className="text-gray-400 italic">No name</span>

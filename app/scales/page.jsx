@@ -200,9 +200,13 @@ export default function ScalesPage() {
               key={scale.scale_id}
               className="bg-white border rounded-2xl shadow p-4 hover:shadow-lg transition"
             >
-              <h2 className="text-xl font-semibold text-indigo-600">
-                Serial Number: {scale.serial_number}
+              <h2 className="text-xl font-semibold text-blue-600">
+                <span className="text-gray-500">Name: </span>
+                {scale.name}
               </h2>
+              <p className="text-sm text-gray-700">
+                Serial Number: {scale.serial_number}
+              </p>
               <p className="text-sm text-gray-700">
                 Scale ID: {scale.scale_id}
               </p>
@@ -277,18 +281,19 @@ export default function ScalesPage() {
               {(selectedResolution === "hourly"
                 ? scaleDataHourly
                 : scaleDataDaily
-              )?.sort((a,b) => new Date(b.time) - new Date(a.time)) // Sort by time, newest first
-              .map((item, index) => (
-                <tr key={index}>
-                  <td className="border px-4 py-2">
-                    {item.time ? new Date(item.time).toLocaleString() : "N/A"}
-                  </td>
-                  <td className="border px-4 py-2">{item.weight}</td>
-                  <td className="border px-4 py-2">{item.yield}</td>
-                  <td className="border px-4 py-2">{item.temperature}</td>
-                  <td className="border px-4 py-2">{item.humidity}</td>
-                </tr>
-              ))}
+              )
+                ?.sort((a, b) => new Date(b.time) - new Date(a.time)) // Sort by time, newest first
+                .map((item, index) => (
+                  <tr key={index}>
+                    <td className="border px-4 py-2">
+                      {item.time ? new Date(item.time).toLocaleString() : "N/A"}
+                    </td>
+                    <td className="border px-4 py-2">{item.weight}</td>
+                    <td className="border px-4 py-2">{item.yield}</td>
+                    <td className="border px-4 py-2">{item.temperature}</td>
+                    <td className="border px-4 py-2">{item.humidity}</td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
