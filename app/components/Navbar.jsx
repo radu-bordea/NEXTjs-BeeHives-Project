@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation"; // Use usePathname instead of useRouter
+import DarkModeToggle from "./DarkModeToggle";
 
 export default function Navbar() {
   const pathname = usePathname(); // Get the current path using usePathname
@@ -12,6 +13,7 @@ export default function Navbar() {
     <nav className="flex items-center justify-between p-4 bg-white shadow-md">
       {/* Left side navigation */}
       <div className="flex items-center space-x-6">
+      <DarkModeToggle/>
         <Link
           href="/"
           className={` ${isActive("/") ? "text-blue-600" : "text-gray-800"}`}

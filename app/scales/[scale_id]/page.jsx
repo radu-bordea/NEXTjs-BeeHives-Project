@@ -122,7 +122,7 @@ export default function ScaleDetailPage({ params }) {
       <div className="flex mb-4 ml-8">
         <button
           onClick={() => setSelectedResolution("hourly")}
-          className={`px-4 py-2 rounded mr-2 ${
+          className={`px-4 py-2 rounded text-gray-700 mr-2 ${
             selectedResolution === "hourly"
               ? "bg-blue-700 text-white"
               : "bg-gray-200"
@@ -132,7 +132,7 @@ export default function ScaleDetailPage({ params }) {
         </button>
         <button
           onClick={() => setSelectedResolution("daily")}
-          className={`px-4 py-2 rounded ${
+          className={`px-4 py-2 rounded text-gray-700 ${
             selectedResolution === "daily"
               ? "bg-green-700 text-white"
               : "bg-gray-200"
