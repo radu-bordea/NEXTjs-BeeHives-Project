@@ -246,7 +246,7 @@ export default function ScalesPage() {
           <div className="flex mb-4">
             <button
               onClick={() => fetchScaleData(selectedScaleId, "hourly")}
-              className={`px-4 py-2 rounded mr-2 ${
+              className={`px-4 py-2 rounded text-gray-700 mr-2 ${
                 selectedResolution === "hourly"
                   ? "bg-blue-700 text-white"
                   : "bg-gray-200"
@@ -256,7 +256,7 @@ export default function ScalesPage() {
             </button>
             <button
               onClick={() => fetchScaleData(selectedScaleId, "daily")}
-              className={`px-4 py-2 rounded ${
+              className={`px-4 py-2 rounded text-gray-700 ${
                 selectedResolution === "daily"
                   ? "bg-green-700 text-white"
                   : "bg-gray-200"

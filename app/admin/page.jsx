@@ -67,7 +67,7 @@ const AdminPage = () => {
         <p>Loading scales...</p>
       ) : (
         <table className="min-w-full border border-gray-300 rounded-md overflow-hidden">
-          <thead className="bg-gray-100 text-left">
+          <thead className="bg-gray-300 text-gray-700 text-left">
             <tr>
               <th className="px-4 py-2 border">Scale ID</th>
               <th className="px-4 py-2 border">Serial Number</th>
