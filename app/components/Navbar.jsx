@@ -1,66 +1,137 @@
 "use client";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation"; // Use usePathname instead of useRouter
+import { usePathname } from "next/navigation";
+import { GiHamburgerMenu } from "react-icons/gi";
+import { AiOutlineClose } from "react-icons/ai";
 import DarkModeToggle from "./DarkModeToggle";
 
-export default function Navbar() {
-  const pathname = usePathname(); // Get the current path using usePathname
+// Reusable nav items array
+const navItems = [
+  { label: "Home", path: "/" },
+  { label: "Scales", path: "/scales" },
+  { label: "Analytics", path: "/analytics" },
+  { label: "About", path: "/about" },
+  { label: "Admin", path: "/admin" },
+];
 
-  // Helper function to check if the link is active
+export default function Navbar() {
+  const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Determine if a link matches the current route
   const isActive = (path) => pathname === path;
 
+  // Toggle mobile menu visibility
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen((prev) => !prev);
+  };
+
+  // Close menu (used in multiple places)
+  const closeMenu = () => setIsMobileMenuOpen(false);
+
+  // Listen for ESC key to close mobile menu
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        closeMenu();
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+    } else {
+      document.removeEventListener("keydown", handleKeyDown);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMobileMenuOpen]);
+
   return (
-    <nav className="flex items-center justify-between p-4 bg-white shadow-md">
-      {/* Left side navigation */}
-      <div className="flex items-center space-x-6">
-      <DarkModeToggle/>
-        <Link
-          href="/"
-          className={` ${isActive("/") ? "text-blue-600" : "text-gray-800"}`}
-        >
-          Home
-        </Link>
-        <Link
-          href="/scales"
-          className={`hover:text-blue-600 ${
-            isActive("/scales") ? "text-blue-600" : "text-gray-800"
-          }`}
-        >
-          Scales
-        </Link>
-        <Link
-          href="/analytics"
-          className={`hover:text-blue-500 ${
-            isActive("/analytics") ? "text-blue-600" : "text-gray-800"
-          }`}
-        >
-          Analytics
-        </Link>
-        <Link
-          href="/about"
-          className={`hover:text-blue-600 ${
-            isActive("/about") ? "text-blue-600" : "text-gray-800"
-          }`}
-        >
-          About
-        </Link>
-        <Link
-          href="/admin"
-          className={`hover:text-blue-600 ${
-            isActive("/admin") ? "text-blue-600" : "text-gray-800"
-          }`}
-        >
-          Admin
-        </Link>
+    <nav className="bg-white shadow-md p-4 relative z-50">
+      <div className="flex items-center justify-between">
+        {/* Left: Logo and dark mode toggle */}
+        <div className="flex items-center space-x-4">
+          <DarkModeToggle />
+          <Link href="/" className="text-xl font-semibold text-gray-800">
+            Logo
+          </Link>
+        </div>
+
+        {/* Mobile: Hamburger toggle button */}
+        <div className="md:hidden">
+          <button
+            onClick={toggleMobileMenu}
+            className="text-gray-800 focus:outline-none"
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? (
+              <AiOutlineClose size={24} />
+            ) : (
+              <GiHamburgerMenu size={24} />
+            )}
+          </button>
+        </div>
+
+        {/* Desktop: Navigation links */}
+        <div className="hidden md:flex space-x-6 items-center">
+          {navItems.map(({ path, label }) => (
+            <Link
+              key={path}
+              href={path}
+              className={`hover:text-blue-600 ${
+                isActive(path) ? "text-blue-600" : "text-gray-800"
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+          <Link href="/login" className="text-blue-600 hover:text-blue-800">
+            Login
+          </Link>
+        </div>
       </div>
 
-      {/* Right side navigation */}
-      <div className="flex items-center space-x-4">
-        {/* Later replace with NextAuth session info */}
-        <Link href="/login" className="text-blue-600 hover:text-blue-800">
-          Login
-        </Link>
+      {/* Mobile: Sliding drawer menu */}
+      <div
+        className={`fixed top-0 right-0 h-full w-2/3 max-w-xs bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-40 ${
+          isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        <div className="flex flex-col p-4 space-y-4">
+          {navItems.map(({ path, label }) => (
+            <Link
+              key={path}
+              href={path}
+              className={`text-lg hover:text-blue-600 ${
+                isActive(path) ? "text-blue-600" : "text-gray-800"
+              }`}
+              onClick={closeMenu}
+            >
+              {label}
+            </Link>
+          ))}
+          <Link
+            href="/login"
+            className="text-lg text-blue-600 hover:text-blue-800"
+            onClick={closeMenu}
+          >
+            Login
+          </Link>
+        </div>
       </div>
+
+      {/* Mobile: Click-outside overlay */}
+      {isMobileMenuOpen && (
+        <div
+          onClick={closeMenu}
+          className="fixed inset-0 bg-black opacity-30 z-30"
+          aria-hidden="true"
+        />
+      )}
     </nav>
   );
 }
