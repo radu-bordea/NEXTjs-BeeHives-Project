@@ -67,18 +67,38 @@ export async function POST() {
 // GET handler: Returns all scales stored in MongoDB
 export async function GET() {
   try {
-    // Step 1: Connect to MongoDB and fetch all scales
     const client = await clientPromise;
     const db = client.db();
-    const collection = db.collection("scales");
+    const scalesCollection = db.collection("scales");
 
-    const scales = await collection.find().toArray(); // Convert cursor to array
-    console.log("Fetched scales:", scales); // Log for verification
+    // Use aggregation to join with scale_names collection
+    const scales = await scalesCollection
+      .aggregate([
+        {
+          $lookup: {
+            from: "scale_names", // collection to join
+            localField: "scale_id", // field from scales
+            foreignField: "scale_id", // field from scale_names
+            as: "name_info", // output array field
+          },
+        },
+        {
+          $addFields: {
+            name: { $arrayElemAt: ["$name_info.name", 0] }, // extract name from array
+          },
+        },
+        {
+          $project: {
+            name_info: 0, // remove the temporary array field
+          },
+        },
+      ])
+      .toArray();
 
-    // Step 2: Return scales in JSON format
+    console.log("Fetched scales with names:", scales);
+
     return new Response(JSON.stringify({ scales }), { status: 200 });
   } catch (err) {
-    // Handle MongoDB or server error
     console.error("❌ GET error:", err);
     return new Response(JSON.stringify({ error: "Failed to load scales" }), {
       status: 500,
