@@ -6,21 +6,13 @@ export async function PUT(req, { params }) {
   const client = await clientPromise;
   const db = client.db();
 
-  console.log("PUT /api/scales/", scaleId, "→ New name:", name);
+  console.log("PUT /api/scale-names/", scaleId, "→ New name:", name);
 
-  const result = await db.collection("scales").updateOne(
-    { scale_id: scaleId }, // ✅ match DB field
+  const result = await db.collection("scale_names").updateOne(
+    { scale_id: scaleId },
     { $set: { name } },
-    { upsert: false }
+    { upsert: true } // since it's a separate collection, allow insert
   );
-
-  console.log("Update result:", result);
-
-  if (result.matchedCount === 0) {
-    return new Response(JSON.stringify({ error: "Scale not found" }), {
-      status: 404,
-    });
-  }
 
   return new Response(JSON.stringify({ success: true }), { status: 200 });
 }
