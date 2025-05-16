@@ -112,17 +112,17 @@ export default function ScaleDetailPage({ params }) {
   const maxWeight = Math.max(...weightData);
 
   return (
-    <div className="p-6">
+    <div className="p-6 text-gray-500">
       {/* Page title */}
       <h1 className="text-2xl font-bold mb-6 ml-8">
         📊 Graphs for Scale ID: {scale_id}
       </h1>
 
       {/* Resolution toggle buttons */}
-      <div className="flex mb-4 ml-8">
+      <div className="flex mb-5 ml-8">
         <button
           onClick={() => setSelectedResolution("hourly")}
-          className={`px-4 py-2 rounded text-gray-700 mr-2 ${
+          className={`px-5 py-2 rounded text-gray-700 mr-2 ${
             selectedResolution === "hourly"
               ? "bg-blue-700 text-white"
               : "bg-gray-200"
@@ -185,9 +185,9 @@ export default function ScaleDetailPage({ params }) {
       )}
 
       {/* Weight Line Chart */}
-      <ResponsiveContainer width="100%" height={250} className="mt-8">
+      <ResponsiveContainer width="100%" height={250} className="mt-8 ">
         <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
+          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
           <XAxis dataKey="time" />
           <YAxis
             domain={[minWeight - 1, maxWeight + 1]} // Add buffer to y-axis
@@ -195,38 +195,53 @@ export default function ScaleDetailPage({ params }) {
           />
           <Tooltip />
           <Legend />
-          <Line dataKey="weight" stroke="#fb8c00" type="monotone" />
+          <Line
+            dataKey="weight"
+            stroke="#fb8c00"
+            strokeWidth={2}
+            type="monotone"
+          />
         </LineChart>
       </ResponsiveContainer>
 
       {/* Yield Line Chart */}
       <ResponsiveContainer width="100%" height={250} className="mt-8">
         <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
+          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
           <XAxis dataKey="time" />
           <YAxis />
           <Tooltip />
           <Legend />
-          <Line dataKey="yield" stroke="#43a047" type="monotone" />
+          <Line
+            dataKey="yield"
+            stroke="#43a047"
+            strokeWidth={2}
+            type="monotone"
+          />
         </LineChart>
       </ResponsiveContainer>
 
       {/* Temperature Line Chart */}
       <ResponsiveContainer width="100%" height={250}>
         <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
+          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
           <XAxis dataKey="time" />
           <YAxis />
           <Tooltip />
           <Legend />
-          <Line dataKey="temperature" stroke="#e53935" type="monotone" />
+          <Line
+            dataKey="temperature"
+            stroke="#e53935"
+            strokeWidth={2}
+            type="monotone"
+          />
         </LineChart>
       </ResponsiveContainer>
 
       {/* Humidity Bar Chart */}
       <ResponsiveContainer width="100%" height={250} className="mt-8">
         <BarChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
+          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
           <XAxis dataKey="time" />
           <YAxis />
           <Tooltip />

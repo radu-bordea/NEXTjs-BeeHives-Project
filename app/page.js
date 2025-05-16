@@ -1,6 +1,6 @@
 const HomePage = () => {
   return (
-    <div className="p-6">
+    <div className="p-6 dark:text-gray-500">
       <h1 className="text-3xl font-bold mb-4">
         About the Beehive Data Project
       </h1>

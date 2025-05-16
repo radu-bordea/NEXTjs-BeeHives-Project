@@ -51,12 +51,12 @@ export default function Navbar() {
   }, [isMobileMenuOpen]);
 
   return (
-    <nav className="bg-white shadow-md p-4 relative z-50">
+    <nav className=" shadow-md p-4 relative z-50">
       <div className="flex items-center justify-between">
         {/* Left: Logo and dark mode toggle */}
         <div className="flex items-center space-x-4">
           <DarkModeToggle />
-          <Link href="/" className="text-xl font-semibold text-gray-800">
+          <Link href="/" className="text-xl font-semibold text-gray-500">
             Logo
           </Link>
         </div>
@@ -65,7 +65,7 @@ export default function Navbar() {
         <div className="md:hidden">
           <button
             onClick={toggleMobileMenu}
-            className="text-gray-800 focus:outline-none"
+            className="text-gray-500 focus:outline-none"
             aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? (
@@ -83,13 +83,22 @@ export default function Navbar() {
               key={path}
               href={path}
               className={`hover:text-blue-600 ${
-                isActive(path) ? "text-blue-600" : "text-gray-800"
+                isActive(path)
+                  ? "text-blue-600"
+                  : "text-gray-800 dark:text-gray-500"
               }`}
             >
               {label}
             </Link>
           ))}
-          <Link href="/login" className="text-blue-600 hover:text-blue-800">
+          <Link
+            href="/login"
+            className={`hover:text-blue-600 ${
+              isActive("/login")
+                ? "text-blue-600"
+                : "text-gray-800 dark:text-gray-500"
+            }`}
+          >
             Login
           </Link>
         </div>
@@ -97,7 +106,7 @@ export default function Navbar() {
 
       {/* Mobile: Sliding drawer menu */}
       <div
-        className={`fixed top-0 right-0 h-full w-2/3 max-w-xs bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-40 ${
+        className={`fixed top-0 right-0 h-full w-2/3 max-w-xs bg-white dark:bg-black shadow-lg transform transition-transform duration-300 ease-in-out z-40 ${
           isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -107,7 +116,7 @@ export default function Navbar() {
               key={path}
               href={path}
               className={`text-lg hover:text-blue-600 ${
-                isActive(path) ? "text-blue-600" : "text-gray-800"
+                isActive(path) ? "text-blue-600" : "text-gray-500"
               }`}
               onClick={closeMenu}
             >
@@ -116,7 +125,11 @@ export default function Navbar() {
           ))}
           <Link
             href="/login"
-            className="text-lg text-blue-600 hover:text-blue-800"
+            className={`hover:text-blue-600 ${
+              isActive("/login")
+                ? "text-blue-600"
+                : "text-gray-800 dark:text-gray-500"
+            }`}
             onClick={closeMenu}
           >
             Login
