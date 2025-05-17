@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import Spinner from "../components/Spinner";
 import SpinnerSmall from "../components/SpinnerSmall";
 import Loading from "../components/Loading";
+import ScaleCard from "../components/ScaleCard";
 
 export default function ScalesPage() {
   const [scales, setScales] = useState([]);
@@ -172,44 +173,14 @@ export default function ScalesPage() {
         <div className="overflow-x-auto md:overflow-x-visible">
           <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 w-max md:w-auto">
             {scales.map((scale, index) => (
-              <motion.div
+              <ScaleCard
                 key={scale.scale_id}
-                className="min-w-[280px] snap-start border rounded-2xl shadow p-4 hover:shadow-lg transition bg-white"
-                initial={{ opacity: 0, y: 100 }}
-                animate={{ opacity: 2, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
-              >
-                <h2 className="text-xl font-semibold text-blue-600">
-                  <span className="text-gray-500">Name: </span>
-                  {scale.name}
-                </h2>
-                <p className="text-sm text-gray-500">
-                  Serial Number: {scale.serial_number}
-                </p>
-                <p className="text-sm text-gray-500">
-                  Scale ID: {scale.scale_id}
-                </p>
-                <p className="text-sm text-gray-500">
-                  Hardware Key: {scale.hardware_key}
-                </p>
-
-                <div className="flex items-center gap-2 mt-4">
-                  <button
-                    onClick={() => handleData(scale.scale_id)}
-                    className="bg-green-600 text-white px-4 py-2 rounded"
-                  >
-                    📊 View Data
-                  </button>
-                  {perScaleSyncing[scale.scale_id] && <SpinnerSmall />}
-                </div>
-
-                <button
-                  onClick={() => router.push(`/scales/${scale.scale_id}`)}
-                  className="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition"
-                >
-                  📈 View Charts
-                </button>
-              </motion.div>
+                scale={scale}
+                index={index}
+                onViewData={handleData}
+                perScaleSyncing={perScaleSyncing}
+                onViewCharts={(id) => router.push(`/scales/${id}`)}
+              />
             ))}
           </div>
         </div>
