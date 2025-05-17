@@ -39,7 +39,7 @@ export default function DarkModeToggle() {
   return (
     <button
       onClick={toggleDarkMode}
-      className="text-2xl rounded-full text-gray-800 dark:text-gray-500"
+      className="text-2xl rounded-full text-gray-800 dark:text-gray-400"
     >
       {isDark ? <MdDarkMode/> : <MdOutlineDarkMode/>}
     </button>
