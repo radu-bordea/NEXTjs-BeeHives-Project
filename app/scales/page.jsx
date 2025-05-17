@@ -15,7 +15,7 @@ export default function ScalesPage() {
   const [loadTableData, setLoadTableData] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [perScaleSyncing, setPerScaleSyncing] = useState({});
-  const [selectedScaleId, setSelectedScaleId] = useState(null);
+  const [selectedScale, setSelectedScale] = useState(null); // Updated
   const [selectedResolution, setSelectedResolution] = useState("hourly");
   const [scaleDataHourly, setScaleDataHourly] = useState(null);
   const [scaleDataDaily, setScaleDataDaily] = useState(null);
@@ -37,8 +37,12 @@ export default function ScalesPage() {
   };
 
   const handleData = (id) => {
-    fetchScaleData(id);
-    setLoadTableData(true);
+    const scale = scales.find((s) => s.scale_id === id);
+    if (scale) {
+      setSelectedScale(scale); // Store full scale
+      fetchScaleData(id);
+      setLoadTableData(true);
+    }
   };
 
   const syncScales = async () => {
@@ -108,7 +112,6 @@ export default function ScalesPage() {
   };
 
   const fetchScaleData = async (scaleId, resolution = "hourly") => {
-    setSelectedScaleId(scaleId);
     setSelectedResolution(resolution);
     setScaleDataHourly(null);
     setScaleDataDaily(null);
@@ -190,9 +193,13 @@ export default function ScalesPage() {
             selectedResolution === "hourly" ? scaleDataHourly : scaleDataDaily
           }
           selectedResolution={selectedResolution}
-          onResolutionChange={(res) => fetchScaleData(selectedScaleId, res)}
+          onResolutionChange={(res) =>
+            fetchScaleData(selectedScale?.scale_id, res)
+          }
+          scaleName={selectedScale?.name || selectedScale?.scale_id}
         />
       )}
+
       {loadTableData && <Loading title="Loading Table Data..." />}
       {error && (
         <div className="mt-4 text-red-500">

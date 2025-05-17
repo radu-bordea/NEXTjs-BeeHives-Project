@@ -4,12 +4,15 @@ export default function Table({
   data,
   selectedResolution,
   onResolutionChange,
+  scaleName, // new prop
 }) {
   const sortedData = data?.sort((a, b) => new Date(b.time) - new Date(a.time));
 
   return (
     <div className="mt-8">
-      <h3 className="text-xl font-semibold mb-4">Measurement Data</h3>
+      <h3 className="text-xl font-semibold mb-4">
+        Measurement Data - {scaleName || "Unknown Scale"}
+      </h3>
 
       <div className="flex mb-4">
         <button
@@ -34,7 +37,6 @@ export default function Table({
         </button>
       </div>
 
-      {/* Add this wrapper */}
       <div className="overflow-x-auto">
         <table className="table-auto w-full border min-w-[600px]">
           <thead>
