@@ -145,51 +145,49 @@ export default function ScaleDetailPage({ params }) {
         📊 {selectedScale?.name || `ID: ${scale_id}`}
       </h1>
 
-      <div className="flex flex-row">
-        <div className="flex flex-col md:flex-row mb-5 ml-4 gap-4 mt-8">
-          <button
-            onClick={() => setSelectedResolution("hourly")}
-            className={`px-2 py-2 md:py-1 rounded w-full text-gray-700 mr-2 ${
-              selectedResolution === "hourly"
-                ? "bg-blue-700 text-white"
-                : "bg-gray-200"
-            }`}
-          >
-            Hourly
-          </button>
-          <button
-            onClick={() => setSelectedResolution("daily")}
-            className={`px-4 py-2 md:py-1 mt-4 md:mt-0 rounded w-full text-gray-700 ${
-              selectedResolution === "daily"
-                ? "bg-green-700 text-white"
-                : "bg-gray-200"
-            }`}
-          >
-            Daily
-          </button>
-        </div>
+      <div className="flex md:flex-row mb-5 ml-4 gap-4 mt-8">
+        <button
+          onClick={() => setSelectedResolution("hourly")}
+          className={`px-2 py-2 md:py-1 rounded w-full text-gray-700 mr-2 ${
+            selectedResolution === "hourly"
+              ? "bg-blue-700 text-white"
+              : "bg-gray-200"
+          }`}
+        >
+          Hourly
+        </button>
+        <button
+          onClick={() => setSelectedResolution("daily")}
+          className={`px-2 py-2 md:py-1 md:mt-0 rounded w-full text-gray-700 ${
+            selectedResolution === "daily"
+              ? "bg-green-700 text-white"
+              : "bg-gray-200"
+          }`}
+        >
+          Daily
+        </button>
+      </div>
 
-        <div className="flex flex-col md:flex-row gap-2 mb-4 ml-2">
-          <div>
-            <label className="block font-medium mb-1">Start Time:</label>
-            <DatePicker
-              selected={startDate}
-              onChange={(date) => setStartDate(date)}
-              showTimeSelect={selectedResolution === "hourly"}
-              dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
-              customInput={<CustomInputButton />}
-            />
-          </div>
-          <div>
-            <label className="block font-medium mb-1">End Time:</label>
-            <DatePicker
-              selected={endDate}
-              onChange={(date) => setEndDate(date)}
-              showTimeSelect={selectedResolution === "hourly"}
-              dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
-              customInput={<CustomInputButton />}
-            />
-          </div>
+      <div className="flex flex-col md:flex-row gap-2 mb-4 mx-4 md:mx-8">
+        <div >
+          <label className="inline-block font-medium px-2 mb-1">Start: </label>{" "}
+          <DatePicker
+            selected={startDate}
+            onChange={(date) => setStartDate(date)}
+            showTimeSelect={selectedResolution === "hourly"}
+            dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
+            customInput={<CustomInputButton />}
+          />
+        </div>
+        <div>
+          <label className="inline-block font-medium px-2 mb-1 mr-2 md:mr-0">End: </label>{" "}
+          <DatePicker
+            selected={endDate}
+            onChange={(date) => setEndDate(date)}
+            showTimeSelect={selectedResolution === "hourly"}
+            dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
+            customInput={<CustomInputButton />}
+          />
         </div>
       </div>
 
