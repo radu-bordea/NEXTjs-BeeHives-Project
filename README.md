@@ -6,6 +6,7 @@
 - npm i react-spinners
 - npm install react-datepicker
 - npm install swr
+- npm install framer-motion
 
 
 

@@ -2,34 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Spinner from "../components/Spinner"; // General full-page spinner
+import { motion } from "framer-motion";
+import Spinner from "../components/Spinner";
 import SpinnerSmall from "../components/SpinnerSmall";
 import Loading from "../components/Loading";
 
 export default function ScalesPage() {
-  // State for scale list
   const [scales, setScales] = useState([]);
-
-  // Loading states
   const [loading, setLoading] = useState(true);
   const [loadTableData, setLoadTableData] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [perScaleSyncing, setPerScaleSyncing] = useState({}); // Tracks individual scale syncing
-
-  // State for currently selected scale and resolution
+  const [perScaleSyncing, setPerScaleSyncing] = useState({});
   const [selectedScaleId, setSelectedScaleId] = useState(null);
   const [selectedResolution, setSelectedResolution] = useState("hourly");
-
-  // Measurement data
   const [scaleDataHourly, setScaleDataHourly] = useState(null);
   const [scaleDataDaily, setScaleDataDaily] = useState(null);
-
-  // Error handling
   const [error, setError] = useState(null);
-
   const router = useRouter();
 
-  // Fetch scale metadata from backend
   const fetchScales = async () => {
     setLoading(true);
     try {
@@ -49,11 +39,9 @@ export default function ScalesPage() {
     setLoadTableData(true);
   };
 
-  // Sync metadata, show all scales, then sync each scale’s data in background
   const syncScales = async () => {
     setSyncing(true);
     try {
-      // Sync metadata
       const res = await fetch("/api/scales", {
         method: "POST",
         headers: {
@@ -64,15 +52,11 @@ export default function ScalesPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // alert("✅ Synced scale metadata!");
-
-        // Load updated scale list
         const refreshedRes = await fetch("/api/scales");
         const { scales: freshScales } = await refreshedRes.json();
         setScales(freshScales);
         setLoading(false);
 
-        // Sync data (hourly + daily) for each scale in background
         freshScales.forEach(async (scale) => {
           setPerScaleSyncing((prev) => ({
             ...prev,
@@ -88,7 +72,7 @@ export default function ScalesPage() {
             if (!scaleDataRes.ok) {
               let errorMessage = "Unknown error";
               try {
-                const errorData = await scaleDataRes.json(); // 🛡️ guarded
+                const errorData = await scaleDataRes.json();
                 errorMessage = errorData.error || errorMessage;
               } catch (e) {
                 console.warn(
@@ -121,7 +105,6 @@ export default function ScalesPage() {
     }
   };
 
-  // Fetch measurement data for a specific scale and resolution
   const fetchScaleData = async (scaleId, resolution = "hourly") => {
     setSelectedScaleId(scaleId);
     setSelectedResolution(resolution);
@@ -137,9 +120,7 @@ export default function ScalesPage() {
       if (!res.ok) throw new Error("Full data not yet available");
 
       const data = await res.json();
-      if (data.length === 0) {
-        throw new Error("No full data yet");
-      }
+      if (data.length === 0) throw new Error("No full data yet");
 
       if (resolution === "hourly") {
         setScaleDataHourly(data);
@@ -150,7 +131,6 @@ export default function ScalesPage() {
       console.warn(
         `⚠️ Full data missing for scale ${scaleId}, trying preview...`
       );
-
       try {
         const fallbackRes = await fetch(
           `/api/scale-data/${scaleId}/latest?resolution=${resolution}&limit=20`
@@ -168,87 +148,83 @@ export default function ScalesPage() {
     }
   };
 
-  // Initial load of scale list
   useEffect(() => {
     fetchScales();
   }, []);
 
   return (
     <div className="relative p-6">
-      {/* Full page overlay spinner when syncing all scales */}
       {syncing && <Spinner />}
 
-      {/* Page header */}
       <h1 className="text-2xl font-bold mb-4">🐝 Beehive Scales</h1>
 
-      {/* Button to trigger sync */}
       <button
         onClick={syncScales}
         disabled={syncing}
-        className="mb-6 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition disabled:opacity-50"
+        className="mb-6 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-500 transition disabled:opacity-50"
       >
         {syncing ? "Syncing..." : "🔄 Sync Scales from API"}
       </button>
 
-      {/* Show loading or scale cards */}
       {loading ? (
         <Loading title="Loading Page..." />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
-          {scales.map((scale) => (
-            <div
-              key={scale.scale_id}
-              className="bg-white border rounded-2xl shadow p-4 hover:shadow-lg transition"
-            >
-              <h2 className="text-xl font-semibold text-blue-600">
-                <span className="text-gray-500">Name: </span>
-                {scale.name}
-              </h2>
-              <p className="text-sm text-gray-700">
-                Serial Number: {scale.serial_number}
-              </p>
-              <p className="text-sm text-gray-700">
-                Scale ID: {scale.scale_id}
-              </p>
-              <p className="text-sm text-gray-700">
-                Hardware Key: {scale.hardware_key}
-              </p>
-
-              {/* View Data button with inline spinner */}
-              <div className="flex items-center gap-2 mt-4">
-                <button
-                  onClick={() => handleData(scale.scale_id)}
-                  className="bg-green-600 text-white px-4 py-2 rounded"
-                >
-                  📊 View Data
-                </button>
-                {perScaleSyncing[scale.scale_id] && <SpinnerSmall />}
-              </div>
-
-              {/* View charts button */}
-              <button
-                onClick={() => router.push(`/scales/${scale.scale_id}`)}
-                className="mt-2 bg-blue-600 text-white px-4 py-2 rounded  hover:bg-blue-700 transition"
+        <div className="overflow-x-auto md:overflow-x-visible">
+          <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 w-max md:w-auto">
+            {scales.map((scale, index) => (
+              <motion.div
+                key={scale.scale_id}
+                className="min-w-[280px] snap-start border rounded-2xl shadow p-4 hover:shadow-lg transition bg-white"
+                initial={{ opacity: 0, y: 100 }}
+                animate={{ opacity: 2, y: 0 }}
+                transition={{ delay: index * 0.1, duration: 0.5 }}
               >
-                📈 View Charts
-              </button>
-            </div>
-          ))}
+                <h2 className="text-xl font-semibold text-blue-600">
+                  <span className="text-gray-500">Name: </span>
+                  {scale.name}
+                </h2>
+                <p className="text-sm text-gray-500">
+                  Serial Number: {scale.serial_number}
+                </p>
+                <p className="text-sm text-gray-500">
+                  Scale ID: {scale.scale_id}
+                </p>
+                <p className="text-sm text-gray-500">
+                  Hardware Key: {scale.hardware_key}
+                </p>
+
+                <div className="flex items-center gap-2 mt-4">
+                  <button
+                    onClick={() => handleData(scale.scale_id)}
+                    className="bg-green-600 text-white px-4 py-2 rounded"
+                  >
+                    📊 View Data
+                  </button>
+                  {perScaleSyncing[scale.scale_id] && <SpinnerSmall />}
+                </div>
+
+                <button
+                  onClick={() => router.push(`/scales/${scale.scale_id}`)}
+                  className="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition"
+                >
+                  📈 View Charts
+                </button>
+              </motion.div>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Show selected scale’s data if available */}
       {(scaleDataHourly || scaleDataDaily) && (
         <div className="mt-8">
           <h3 className="text-xl font-semibold mb-4">Measurement Data</h3>
 
-          {/* Resolution toggle buttons */}
           <div className="flex mb-4">
             <button
               onClick={() => fetchScaleData(selectedScaleId, "hourly")}
-              className={`px-4 py-2 rounded text-gray-700 mr-2 ${
+              className={`px-4 py-2 rounded text-gray-500 mr-2 ${
                 selectedResolution === "hourly"
-                  ? "bg-blue-700 text-white"
+                  ? "bg-blue-500 text-white"
                   : "bg-gray-200"
               }`}
             >
@@ -256,9 +232,9 @@ export default function ScalesPage() {
             </button>
             <button
               onClick={() => fetchScaleData(selectedScaleId, "daily")}
-              className={`px-4 py-2 rounded text-gray-700 ${
+              className={`px-4 py-2 rounded text-gray-500 ${
                 selectedResolution === "daily"
-                  ? "bg-green-700 text-white"
+                  ? "bg-green-500 text-white"
                   : "bg-gray-200"
               }`}
             >
@@ -266,7 +242,6 @@ export default function ScalesPage() {
             </button>
           </div>
 
-          {/* Measurement table */}
           <table className="table-auto w-full border">
             <thead>
               <tr>
@@ -282,7 +257,7 @@ export default function ScalesPage() {
                 ? scaleDataHourly
                 : scaleDataDaily
               )
-                ?.sort((a, b) => new Date(b.time) - new Date(a.time)) // Sort by time, newest first
+                ?.sort((a, b) => new Date(b.time) - new Date(a.time))
                 .map((item, index) => (
                   <tr key={index}>
                     <td className="border px-4 py-2">
@@ -301,7 +276,6 @@ export default function ScalesPage() {
 
       {loadTableData && <Loading title="Loading Table Data..." />}
 
-      {/* Error message display */}
       {error && (
         <div className="mt-4 text-red-500">
           <p>{error}</p>
