@@ -53,6 +53,7 @@ export default function ScaleDetailPage({ params }) {
             weight: entry.weight ?? 0,
             yield: entry.yield ?? 0,
             temperature: entry.temperature ?? 0,
+            brood: entry.brood ?? 0,
             humidity: entry.humidity ?? 0,
           }));
           setChartData(formatted);
@@ -84,6 +85,7 @@ export default function ScaleDetailPage({ params }) {
             weight: entry.weight ?? 0,
             yield: entry.yield ?? 0,
             temperature: entry.temperature ?? 0,
+            brood: entry.brood ?? 0,
             humidity: entry.humidity ?? 0,
           }));
           setChartData(formatted);
@@ -232,6 +234,23 @@ export default function ScaleDetailPage({ params }) {
           <Line
             dataKey="temperature"
             stroke="#e53935"
+            strokeWidth={2}
+            type="monotone"
+          />
+        </LineChart>
+      </ResponsiveContainer>
+
+      {/* Brood Line Chart */}
+      <ResponsiveContainer width="100%" height={250}>
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
+          <XAxis dataKey="time" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Line
+            dataKey="brood"
+            stroke="#e57373"
             strokeWidth={2}
             type="monotone"
           />

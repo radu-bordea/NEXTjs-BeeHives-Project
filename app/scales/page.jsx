@@ -7,6 +7,7 @@ import Spinner from "../components/Spinner";
 import SpinnerSmall from "../components/SpinnerSmall";
 import Loading from "../components/Loading";
 import ScaleCard from "../components/ScaleCard";
+import Table from "../components/Table";
 
 export default function ScalesPage() {
   const [scales, setScales] = useState([]);
@@ -156,9 +157,7 @@ export default function ScalesPage() {
   return (
     <div className="relative p-6">
       {syncing && <Spinner />}
-
       <h1 className="text-2xl font-bold mb-4">🐝 Beehive Scales</h1>
-
       <button
         onClick={syncScales}
         disabled={syncing}
@@ -166,7 +165,6 @@ export default function ScalesPage() {
       >
         {syncing ? "Syncing..." : "🔄 Sync Scales from API"}
       </button>
-
       {loading ? (
         <Loading title="Loading Page..." />
       ) : (
@@ -187,66 +185,15 @@ export default function ScalesPage() {
       )}
 
       {(scaleDataHourly || scaleDataDaily) && (
-        <div className="mt-8">
-          <h3 className="text-xl font-semibold mb-4">Measurement Data</h3>
-
-          <div className="flex mb-4">
-            <button
-              onClick={() => fetchScaleData(selectedScaleId, "hourly")}
-              className={`px-4 py-2 rounded text-gray-500 mr-2 ${
-                selectedResolution === "hourly"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200"
-              }`}
-            >
-              Hourly Data
-            </button>
-            <button
-              onClick={() => fetchScaleData(selectedScaleId, "daily")}
-              className={`px-4 py-2 rounded text-gray-500 ${
-                selectedResolution === "daily"
-                  ? "bg-green-500 text-white"
-                  : "bg-gray-200"
-              }`}
-            >
-              Daily Data
-            </button>
-          </div>
-
-          <table className="table-auto w-full border">
-            <thead>
-              <tr>
-                <th className="border px-4 py-2">Time</th>
-                <th className="border px-4 py-2">Weight</th>
-                <th className="border px-4 py-2">Yield</th>
-                <th className="border px-4 py-2">Temperature</th>
-                <th className="border px-4 py-2">Humidity</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(selectedResolution === "hourly"
-                ? scaleDataHourly
-                : scaleDataDaily
-              )
-                ?.sort((a, b) => new Date(b.time) - new Date(a.time))
-                .map((item, index) => (
-                  <tr key={index}>
-                    <td className="border px-4 py-2">
-                      {item.time ? new Date(item.time).toLocaleString() : "N/A"}
-                    </td>
-                    <td className="border px-4 py-2">{item.weight}</td>
-                    <td className="border px-4 py-2">{item.yield}</td>
-                    <td className="border px-4 py-2">{item.temperature}</td>
-                    <td className="border px-4 py-2">{item.humidity}</td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
+        <Table
+          data={
+            selectedResolution === "hourly" ? scaleDataHourly : scaleDataDaily
+          }
+          selectedResolution={selectedResolution}
+          onResolutionChange={(res) => fetchScaleData(selectedScaleId, res)}
+        />
       )}
-
       {loadTableData && <Loading title="Loading Table Data..." />}
-
       {error && (
         <div className="mt-4 text-red-500">
           <p>{error}</p>
