@@ -85,7 +85,7 @@ export default function Navbar() {
               className={`hover:text-blue-600 ${
                 isActive(path)
                   ? "text-blue-600"
-                  : "text-gray-800 dark:text-gray-500"
+                  : "text-gray-500"
               }`}
             >
               {label}
@@ -96,7 +96,7 @@ export default function Navbar() {
             className={`hover:text-blue-600 ${
               isActive("/login")
                 ? "text-blue-600"
-                : "text-gray-800 dark:text-gray-500"
+                : "text-gray-500"
             }`}
           >
             Login
