@@ -106,7 +106,7 @@ export default function Navbar() {
 
       {/* Mobile: Sliding drawer menu */}
       <div
-        className={`fixed top-0 right-0 h-full w-2/3 max-w-xs bg-white dark:bg-black shadow-lg transform transition-transform duration-300 ease-in-out z-40 ${
+        className={`fixed top-0 right-0 h-full w-2/3 max-w-xs dark:bg-black shadow-lg transform transition-transform duration-300 ease-in-out z-40 ${
           isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -141,7 +141,7 @@ export default function Navbar() {
       {isMobileMenuOpen && (
         <div
           onClick={closeMenu}
-          className="fixed inset-0 bg-white dark:bg-black opacity-30 z-30"
+          className="fixed inset-0  dark:bg-black opacity-30 z-30"
           aria-hidden="true"
         />
       )}
