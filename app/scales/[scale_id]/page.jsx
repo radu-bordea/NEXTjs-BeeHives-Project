@@ -16,6 +16,18 @@ import {
 import { useEffect, useState, use } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { forwardRef } from "react";
+
+// ✅ Custom Button Component for DatePicker
+const CustomInputButton = forwardRef(({ value, onClick }, ref) => (
+  <button
+    onClick={onClick}
+    ref={ref}
+    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl shadow transition"
+  >
+    📅 <span>{value || "Select date"}</span>
+  </button>
+));
 
 export default function ScaleDetailPage({ params }) {
   const [scales, setScales] = useState([]);
@@ -164,8 +176,7 @@ export default function ScaleDetailPage({ params }) {
             onChange={(date) => setStartDate(date)}
             showTimeSelect={selectedResolution === "hourly"}
             dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
-            className="border rounded px-4 py-2"
-            readOnly
+            customInput={<CustomInputButton />}
           />
         </div>
         <div>
@@ -175,8 +186,7 @@ export default function ScaleDetailPage({ params }) {
             onChange={(date) => setEndDate(date)}
             showTimeSelect={selectedResolution === "hourly"}
             dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
-            className="border rounded px-4 py-2"
-            readOnly
+            customInput={<CustomInputButton />}
           />
         </div>
       </div>
@@ -198,7 +208,8 @@ export default function ScaleDetailPage({ params }) {
         </div>
       )}
 
-      <ResponsiveContainer width="100%" height={250} className="mt-8 ">
+      {/* Chart Sections */}
+      <ResponsiveContainer width="100%" height={250} className="mt-8">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
           <XAxis dataKey="time" />
@@ -233,7 +244,7 @@ export default function ScaleDetailPage({ params }) {
         </LineChart>
       </ResponsiveContainer>
 
-      <ResponsiveContainer width="100%" height={250}>
+      <ResponsiveContainer width="100%" height={250} className="mt-8">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
           <XAxis dataKey="time" />
@@ -249,7 +260,7 @@ export default function ScaleDetailPage({ params }) {
         </LineChart>
       </ResponsiveContainer>
 
-      <ResponsiveContainer width="100%" height={250}>
+      <ResponsiveContainer width="100%" height={250} className="mt-8">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
           <XAxis dataKey="time" />
