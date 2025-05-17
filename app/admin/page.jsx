@@ -77,7 +77,7 @@ const AdminPage = () => {
           <table className="min-w-full border border-gray-300 rounded-md">
             <thead className="dark:bg-gray-800 text-gray-400 text-left">
               <tr>
-                <th className="px-4 py-2 border">Scale ID -- Name</th>
+                <th className="px-4 py-2 border">Serial Number -- Name</th>
                 <th className="px-4 py-2 border">Actions</th>
               </tr>
             </thead>
@@ -85,7 +85,7 @@ const AdminPage = () => {
               {scales.map((scale) => (
                 <tr key={scale.scale_id} className="border-t">
                   <td className="px-4 py-2 border dark:text-gray-400">
-                    {scale.scale_id} - {" "}
+                    {scale.serial_number} - {" "}
                     <span className="dark:text-gray-400">
                       {scale.name || (
                         <span className="text-red-300 italic">No name</span>
