@@ -168,7 +168,7 @@ export default function ScaleDetailPage({ params }) {
         </button>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-6 ml-8">
+      <div className="flex flex-row gap-4 mb-6 ml-8">
         <div>
           <label className="block font-medium mb-1">Start Time:</label>
           <DatePicker
