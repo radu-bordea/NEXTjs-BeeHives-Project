@@ -23,7 +23,7 @@ const CustomInputButton = forwardRef(({ value, onClick }, ref) => (
   <button
     onClick={onClick}
     ref={ref}
-    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl shadow transition"
+    className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl shadow transition"
   >
     📅 <span>{value || "Select date"}</span>
   </button>
@@ -140,54 +140,56 @@ export default function ScaleDetailPage({ params }) {
   );
 
   return (
-    <div className="p-6 text-gray-500">
-      <h1 className="text-2xl font-bold mb-6 ml-8">
-        📊 Graphs for Scale: {selectedScale?.name || `ID: ${scale_id}`}
+    <div className="p-1 md:p-4 text-gray-500">
+      <h1 className="text-xl font-bold mb-2 ml-8">
+        📊 {selectedScale?.name || `ID: ${scale_id}`}
       </h1>
 
-      <div className="flex mb-5 ml-8">
-        <button
-          onClick={() => setSelectedResolution("hourly")}
-          className={`px-5 py-2 rounded text-gray-700 mr-2 ${
-            selectedResolution === "hourly"
-              ? "bg-blue-700 text-white"
-              : "bg-gray-200"
-          }`}
-        >
-          Hourly Data
-        </button>
-        <button
-          onClick={() => setSelectedResolution("daily")}
-          className={`px-4 py-2 rounded text-gray-700 ${
-            selectedResolution === "daily"
-              ? "bg-green-700 text-white"
-              : "bg-gray-200"
-          }`}
-        >
-          Daily Data
-        </button>
-      </div>
-
-      <div className="flex flex-row gap-4 mb-6 ml-8">
-        <div>
-          <label className="block font-medium mb-1">Start Time:</label>
-          <DatePicker
-            selected={startDate}
-            onChange={(date) => setStartDate(date)}
-            showTimeSelect={selectedResolution === "hourly"}
-            dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
-            customInput={<CustomInputButton />}
-          />
+      <div className="flex flex-row">
+        <div className="flex flex-col md:flex-row mb-5 ml-8 gap-4 mt-8">
+          <button
+            onClick={() => setSelectedResolution("hourly")}
+            className={`px-2 py-2 rounded w-full text-gray-700 mr-2 ${
+              selectedResolution === "hourly"
+                ? "bg-blue-700 text-white"
+                : "bg-gray-200"
+            }`}
+          >
+            Hourly
+          </button>
+          <button
+            onClick={() => setSelectedResolution("daily")}
+            className={`px-4 py-2 rounded w-full text-gray-700 ${
+              selectedResolution === "daily"
+                ? "bg-green-700 text-white"
+                : "bg-gray-200"
+            }`}
+          >
+            Daily
+          </button>
         </div>
-        <div>
-          <label className="block font-medium mb-1">End Time:</label>
-          <DatePicker
-            selected={endDate}
-            onChange={(date) => setEndDate(date)}
-            showTimeSelect={selectedResolution === "hourly"}
-            dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
-            customInput={<CustomInputButton />}
-          />
+
+        <div className="flex flex-col md:flex-row gap-2 mb-4 ml-8">
+          <div>
+            <label className="block font-medium mb-1">Start Time:</label>
+            <DatePicker
+              selected={startDate}
+              onChange={(date) => setStartDate(date)}
+              showTimeSelect={selectedResolution === "hourly"}
+              dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
+              customInput={<CustomInputButton />}
+            />
+          </div>
+          <div>
+            <label className="block font-medium mb-1">End Time:</label>
+            <DatePicker
+              selected={endDate}
+              onChange={(date) => setEndDate(date)}
+              showTimeSelect={selectedResolution === "hourly"}
+              dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
+              customInput={<CustomInputButton />}
+            />
+          </div>
         </div>
       </div>
 
@@ -209,7 +211,7 @@ export default function ScaleDetailPage({ params }) {
       )}
 
       {/* Chart Sections */}
-      <ResponsiveContainer width="100%" height={250} className="mt-8">
+      <ResponsiveContainer width="98%" height={200} className="mt-4">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
           <XAxis dataKey="time" />
@@ -228,7 +230,7 @@ export default function ScaleDetailPage({ params }) {
         </LineChart>
       </ResponsiveContainer>
 
-      <ResponsiveContainer width="100%" height={250} className="mt-8">
+      <ResponsiveContainer width="98%" height={200} className="mt-4">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
           <XAxis dataKey="time" />
@@ -244,7 +246,7 @@ export default function ScaleDetailPage({ params }) {
         </LineChart>
       </ResponsiveContainer>
 
-      <ResponsiveContainer width="100%" height={250} className="mt-8">
+      <ResponsiveContainer width="98%" height={200} className="mt-4">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
           <XAxis dataKey="time" />
@@ -260,7 +262,7 @@ export default function ScaleDetailPage({ params }) {
         </LineChart>
       </ResponsiveContainer>
 
-      <ResponsiveContainer width="100%" height={250} className="mt-8">
+      <ResponsiveContainer width="98%" height={200} className="mt-4">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
           <XAxis dataKey="time" />
@@ -276,7 +278,7 @@ export default function ScaleDetailPage({ params }) {
         </LineChart>
       </ResponsiveContainer>
 
-      <ResponsiveContainer width="100%" height={250} className="mt-8">
+      <ResponsiveContainer width="98%" height={200} className="mt-8">
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
           <XAxis dataKey="time" />
