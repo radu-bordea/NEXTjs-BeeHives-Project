@@ -146,10 +146,10 @@ export default function ScaleDetailPage({ params }) {
       </h1>
 
       <div className="flex flex-row">
-        <div className="flex flex-col md:flex-row mb-5 ml-8 gap-4 mt-8">
+        <div className="flex flex-col md:flex-row mb-5 ml-4 gap-4 mt-8">
           <button
             onClick={() => setSelectedResolution("hourly")}
-            className={`px-2 py-2 rounded w-full text-gray-700 mr-2 ${
+            className={`px-2 py-2 md:py-1 rounded w-full text-gray-700 mr-2 ${
               selectedResolution === "hourly"
                 ? "bg-blue-700 text-white"
                 : "bg-gray-200"
@@ -159,7 +159,7 @@ export default function ScaleDetailPage({ params }) {
           </button>
           <button
             onClick={() => setSelectedResolution("daily")}
-            className={`px-4 py-2 rounded w-full text-gray-700 ${
+            className={`px-4 py-2 md:py-1 mt-4 md:mt-0 rounded w-full text-gray-700 ${
               selectedResolution === "daily"
                 ? "bg-green-700 text-white"
                 : "bg-gray-200"
@@ -169,7 +169,7 @@ export default function ScaleDetailPage({ params }) {
           </button>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-2 mb-4 ml-8">
+        <div className="flex flex-col md:flex-row gap-2 mb-4 ml-2">
           <div>
             <label className="block font-medium mb-1">Start Time:</label>
             <DatePicker
