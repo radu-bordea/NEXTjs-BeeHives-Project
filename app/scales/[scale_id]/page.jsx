@@ -126,7 +126,6 @@ export default function ScaleDetailPage({ params }) {
   const selectedScale = scales.find(
     (scale) => String(scale.scale_id) === String(scale_id)
   );
-  
 
   return (
     <div className="p-6 text-gray-500">
@@ -166,6 +165,7 @@ export default function ScaleDetailPage({ params }) {
             showTimeSelect={selectedResolution === "hourly"}
             dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
             className="border rounded px-4 py-2"
+            readOnly
           />
         </div>
         <div>
@@ -176,6 +176,7 @@ export default function ScaleDetailPage({ params }) {
             showTimeSelect={selectedResolution === "hourly"}
             dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
             className="border rounded px-4 py-2"
+            readOnly
           />
         </div>
       </div>
