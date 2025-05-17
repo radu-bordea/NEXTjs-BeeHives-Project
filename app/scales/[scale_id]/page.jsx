@@ -140,172 +140,154 @@ export default function ScaleDetailPage({ params }) {
   );
 
   return (
-    <>
-      {/* Add these styles to fix scrolling issue on mobile for the time picker */}
-      <style>{`
-        .react-datepicker__time-container {
-          max-height: 300px !important;
-          overflow-y: auto !important;
-          -webkit-overflow-scrolling: touch;
-        }
-        .react-datepicker__time-list {
-          max-height: 300px !important;
-          overflow-y: auto !important;
-          -webkit-overflow-scrolling: touch;
-        }
-      `}</style>
+    <div className="p-1 md:p-4 text-gray-500">
+      <h1 className="text-xl font-bold mb-2 ml-8">
+        📊 {selectedScale?.name || `ID: ${scale_id}`}
+      </h1>
 
-      <div className="p-1 md:p-4 text-gray-500">
-        <h1 className="text-xl font-bold mb-2 ml-8">
-          📊 {selectedScale?.name || `ID: ${scale_id}`}
-        </h1>
-
-        <div className="flex flex-row">
-          <div className="flex flex-col md:flex-row mb-5 ml-8 gap-4 mt-8">
-            <button
-              onClick={() => setSelectedResolution("hourly")}
-              className={`px-2 py-2 rounded w-full text-gray-700 mr-2 ${
-                selectedResolution === "hourly"
-                  ? "bg-blue-700 text-white"
-                  : "bg-gray-200"
-              }`}
-            >
-              Hourly
-            </button>
-            <button
-              onClick={() => setSelectedResolution("daily")}
-              className={`px-4 py-2 rounded w-full text-gray-700 ${
-                selectedResolution === "daily"
-                  ? "bg-green-700 text-white"
-                  : "bg-gray-200"
-              }`}
-            >
-              Daily
-            </button>
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-2 mb-4 ml-8">
-            <div>
-              <label className="block font-medium mb-1">Start Time:</label>
-              <DatePicker
-                selected={startDate}
-                onChange={(date) => setStartDate(date)}
-                showTimeSelect={selectedResolution === "hourly"}
-                timeIntervals={60} // hourly intervals for scrollable 24h list
-                dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
-                customInput={<CustomInputButton />}
-              />
-            </div>
-            <div>
-              <label className="block font-medium mb-1">End Time:</label>
-              <DatePicker
-                selected={endDate}
-                onChange={(date) => setEndDate(date)}
-                showTimeSelect={selectedResolution === "hourly"}
-                timeIntervals={60} // hourly intervals for scrollable 24h list
-                dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
-                customInput={<CustomInputButton />}
-              />
-            </div>
-          </div>
+      <div className="flex flex-row">
+        <div className="flex flex-col md:flex-row mb-5 ml-8 gap-4 mt-8">
+          <button
+            onClick={() => setSelectedResolution("hourly")}
+            className={`px-2 py-2 rounded w-full text-gray-700 mr-2 ${
+              selectedResolution === "hourly"
+                ? "bg-blue-700 text-white"
+                : "bg-gray-200"
+            }`}
+          >
+            Hourly
+          </button>
+          <button
+            onClick={() => setSelectedResolution("daily")}
+            className={`px-4 py-2 rounded w-full text-gray-700 ${
+              selectedResolution === "daily"
+                ? "bg-green-700 text-white"
+                : "bg-gray-200"
+            }`}
+          >
+            Daily
+          </button>
         </div>
 
-        {!previewFetched && (
-          <div className="text-center text-gray-500 my-4">
-            Loading preview data...
+        <div className="flex flex-col md:flex-row gap-2 mb-4 ml-8">
+          <div>
+            <label className="block font-medium mb-1">Start Time:</label>
+            <DatePicker
+              selected={startDate}
+              onChange={(date) => setStartDate(date)}
+              showTimeSelect={selectedResolution === "hourly"}
+              dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
+              customInput={<CustomInputButton />}
+            />
           </div>
-        )}
-        {loadingFull && (
-          <div className="text-center text-blue-500 my-2">
-            Loading full data...
+          <div>
+            <label className="block font-medium mb-1">End Time:</label>
+            <DatePicker
+              selected={endDate}
+              onChange={(date) => setEndDate(date)}
+              showTimeSelect={selectedResolution === "hourly"}
+              dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
+              customInput={<CustomInputButton />}
+            />
           </div>
-        )}
-        {previewFetched && chartData.length > 0 && !loadingFull && (
-          <div className="text-center text-yellow-600 text-sm mb-4">
-            Showing preview data (latest 20 records). Full data will appear if
-            available.
-          </div>
-        )}
-
-        {/* Chart Sections */}
-        <ResponsiveContainer width="98%" height={200} className="mt-4">
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-            <XAxis dataKey="time" />
-            <YAxis
-              domain={[minWeight - 1, maxWeight + 1]}
-              tickFormatter={(v) => v.toFixed(2)}
-            />
-            <Tooltip />
-            <Legend />
-            <Line
-              dataKey="weight"
-              stroke="#fb8c00"
-              strokeWidth={2}
-              type="monotone"
-            />
-          </LineChart>
-        </ResponsiveContainer>
-
-        <ResponsiveContainer width="98%" height={200} className="mt-4">
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-            <XAxis dataKey="time" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Line
-              dataKey="yield"
-              stroke="#43a047"
-              strokeWidth={2}
-              type="monotone"
-            />
-          </LineChart>
-        </ResponsiveContainer>
-
-        <ResponsiveContainer width="98%" height={200} className="mt-4">
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-            <XAxis dataKey="time" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Line
-              dataKey="temperature"
-              stroke="#e53935"
-              strokeWidth={2}
-              type="monotone"
-            />
-          </LineChart>
-        </ResponsiveContainer>
-
-        <ResponsiveContainer width="98%" height={200} className="mt-4">
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-            <XAxis dataKey="time" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Line
-              dataKey="brood"
-              stroke="#e57373"
-              strokeWidth={2}
-              type="monotone"
-            />
-          </LineChart>
-        </ResponsiveContainer>
-
-        <ResponsiveContainer width="98%" height={200} className="mt-8">
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-            <XAxis dataKey="time" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="humidity" fill="#1e88e5" />
-          </BarChart>
-        </ResponsiveContainer>
+        </div>
       </div>
-    </>
+
+      {!previewFetched && (
+        <div className="text-center text-gray-500 my-4">
+          Loading preview data...
+        </div>
+      )}
+      {loadingFull && (
+        <div className="text-center text-blue-500 my-2">
+          Loading full data...
+        </div>
+      )}
+      {previewFetched && chartData.length > 0 && !loadingFull && (
+        <div className="text-center text-yellow-600 text-sm mb-4">
+          Showing preview data (latest 20 records). Full data will appear if
+          available.
+        </div>
+      )}
+
+      {/* Chart Sections */}
+      <ResponsiveContainer width="98%" height={200} className="mt-4">
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
+          <XAxis dataKey="time" />
+          <YAxis
+            domain={[minWeight - 1, maxWeight + 1]}
+            tickFormatter={(v) => v.toFixed(2)}
+          />
+          <Tooltip />
+          <Legend />
+          <Line
+            dataKey="weight"
+            stroke="#fb8c00"
+            strokeWidth={2}
+            type="monotone"
+          />
+        </LineChart>
+      </ResponsiveContainer>
+
+      <ResponsiveContainer width="98%" height={200} className="mt-4">
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
+          <XAxis dataKey="time" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Line
+            dataKey="yield"
+            stroke="#43a047"
+            strokeWidth={2}
+            type="monotone"
+          />
+        </LineChart>
+      </ResponsiveContainer>
+
+      <ResponsiveContainer width="98%" height={200} className="mt-4">
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
+          <XAxis dataKey="time" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Line
+            dataKey="temperature"
+            stroke="#e53935"
+            strokeWidth={2}
+            type="monotone"
+          />
+        </LineChart>
+      </ResponsiveContainer>
+
+      <ResponsiveContainer width="98%" height={200} className="mt-4">
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
+          <XAxis dataKey="time" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Line
+            dataKey="brood"
+            stroke="#e57373"
+            strokeWidth={2}
+            type="monotone"
+          />
+        </LineChart>
+      </ResponsiveContainer>
+
+      <ResponsiveContainer width="98%" height={200} className="mt-8">
+        <BarChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
+          <XAxis dataKey="time" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="humidity" fill="#1e88e5" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
