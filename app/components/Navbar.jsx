@@ -141,7 +141,7 @@ export default function Navbar() {
       {isMobileMenuOpen && (
         <div
           onClick={closeMenu}
-          className="fixed inset-0 bg-black opacity-30 z-30"
+          className="fixed inset-0 bg-white dark:bg-black opacity-30 z-30"
           aria-hidden="true"
         />
       )}
