@@ -12,41 +12,40 @@ export async function GET() {
       scales.map((s) => s.scale_id)
     );
 
-    // 2. Define the time range for today in UTC
+    // 2. Determine the 8-hour block to sync
     const now = new Date();
+    const hour = now.getUTCHours();
 
-    // Get yesterday at 00:00 UTC
-    const yesterdayStart = new Date(
-      Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate() - 1,
-        0,
-        0,
-        0
-      )
-    );
+    let blockStartHour = 0;
+    if (hour >= 0 && hour < 8) {
+      blockStartHour = 0;
+    } else if (hour >= 8 && hour < 16) {
+      blockStartHour = 8;
+    } else {
+      blockStartHour = 16;
+    }
 
-    // Get today at 00:00 UTC
-    const todayStart = new Date(
+    const blockStart = new Date(
       Date.UTC(
         now.getUTCFullYear(),
         now.getUTCMonth(),
         now.getUTCDate(),
+        blockStartHour,
+        15,
         0,
-        0,
-        0
+        0 // Always starts at HH:15:00
       )
     );
+    const blockEnd = new Date(blockStart.getTime() + 8 * 60 * 60 * 1000);
 
-    const timeStart = Math.floor(yesterdayStart.getTime() / 1000);
-    const timeEnd = Math.floor(todayStart.getTime() / 1000);
+    const timeStart = Math.floor(blockStart.getTime() / 1000);
+    const timeEnd = Math.floor(blockEnd.getTime() / 1000);
 
-    console.log("⏱ Corrected payload times", {
+    console.log("⏱ Syncing block:", {
       timeStart,
       timeEnd,
-      readableStart: yesterdayStart.toISOString(),
-      readableEnd: todayStart.toISOString(),
+      readableStart: blockStart.toISOString(),
+      readableEnd: blockEnd.toISOString(),
     });
 
     const resolution = "hourly";
@@ -60,8 +59,6 @@ export async function GET() {
         time_resolution: resolution,
         format: "json",
       };
-
-      console.log(`⏱ Payload for ${scaleId}:`, payload);
 
       console.log(`📤 Fetching HOURLY data for scale ${scaleId}...`);
 
@@ -94,17 +91,18 @@ export async function GET() {
       const cleanedData = data
         .map((item) => cleanAndFilter(item, scaleId))
         .filter(Boolean);
+
       console.log(`✅ Cleaned data: ${cleanedData.length} items`);
 
       const hourlyCollection = db.collection("scale_data_hourly");
 
-      // 4. Avoid duplicate inserts
+      // 4. Avoid duplicate inserts (check for existing data in this block)
       const existing = await hourlyCollection
         .find({
           scale_id: scaleId,
           time: {
-            $gte: todayStart.toISOString(),
-            $lt: now.toISOString(),
+            $gte: blockStart.toISOString(),
+            $lt: blockEnd.toISOString(),
           },
         })
         .toArray();
