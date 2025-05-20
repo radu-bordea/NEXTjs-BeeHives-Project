@@ -2,19 +2,19 @@
   "crons": [
     {
       "path": "/api/cron/hourly-sync",
-      "schedule": "30 0 * * *"
+      "schedule": "30 8 * * *" 
     },
     {
       "path": "/api/cron/hourly-sync",
-      "schedule": "30 12 * * *"
+      "schedule": "30 14 * * *"
     },
     {
       "path": "/api/cron/hourly-sync",
-      "schedule": "30 18 * * *"
+      "schedule": "30 20 * * *" 
     },
     {
       "path": "/api/cron/daily-sync",
-      "schedule": "0 13 * * *"
+      "schedule": "0 9 * * *" 
     }
   ]
 }
