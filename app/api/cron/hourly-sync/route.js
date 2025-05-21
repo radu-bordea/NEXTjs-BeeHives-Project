@@ -31,12 +31,24 @@ export async function GET() {
         now.getUTCMonth(),
         now.getUTCDate(),
         blockStartHour,
-        15,
         0,
-        0 // Always starts at HH:15:00
+        0
       )
     );
+
     const blockEnd = new Date(blockStart.getTime() + 8 * 60 * 60 * 1000);
+
+    const readableFinlandStart = blockStart.toLocaleString("fi-FI", {
+      timeZone: "Europe/Helsinki",
+    });
+    const readableFinlandEnd = blockEnd.toLocaleString("fi-FI", {
+      timeZone: "Europe/Helsinki",
+    });
+
+    console.log("🇫🇮 Finland block time:", {
+      readableFinlandStart,
+      readableFinlandEnd,
+    });
 
     const timeStart = Math.floor(blockStart.getTime() / 1000);
     const timeEnd = Math.floor(blockEnd.getTime() / 1000);
@@ -96,26 +108,33 @@ export async function GET() {
 
       const hourlyCollection = db.collection("scale_data_hourly");
 
-      // 4. Avoid duplicate inserts (check for existing data in this block)
-      const existing = await hourlyCollection
+      // 4. Check for and avoid duplicate hourly inserts
+      const times = cleanedData.map((item) => item.time);
+
+      const existingTimes = await hourlyCollection
         .find({
           scale_id: scaleId,
-          time: {
-            $gte: blockStart.toISOString(),
-            $lt: blockEnd.toISOString(),
-          },
+          time: { $in: times },
         })
+        .project({ time: 1 })
         .toArray();
 
-      if (existing.length > 0) {
-        console.log(`ℹ️ Data already exists for ${scaleId}, skipping insert`);
+      const existingSet = new Set(existingTimes.map((doc) => doc.time));
+
+      const newItems = cleanedData.filter(
+        (item) => !existingSet.has(item.time)
+      );
+
+      if (newItems.length === 0) {
+        console.log(
+          `ℹ️ All hourly data already exists for ${scaleId}, skipping insert`
+        );
         continue;
       }
 
-      // 5. Insert cleaned data
-      const insertResult = await hourlyCollection.insertMany(cleanedData);
+      const insertResult = await hourlyCollection.insertMany(newItems);
       console.log(
-        `📝 Inserted ${insertResult.insertedCount} records for ${scaleId}`
+        `📝 Inserted ${insertResult.insertedCount} new hourly records for ${scaleId}`
       );
     }
 
