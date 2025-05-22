@@ -8,5 +8,7 @@
 - npm install swr
 - npm install framer-motion
 - $ openssl rand -base64 32
+- npm install next-auth
+
 
 
