@@ -7,6 +7,6 @@
 - npm install react-datepicker
 - npm install swr
 - npm install framer-motion
-
+- $ openssl rand -base64 32
 
 
