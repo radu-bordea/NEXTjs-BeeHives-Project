@@ -3,6 +3,7 @@ import GoogleProvider from "next-auth/providers/google";
 import clientPromise from "@/lib/mongodb";
 
 export const authOptions = {
+  secret: process.env.NEXTAUTH_SECRET, // ✅ Required in production
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
