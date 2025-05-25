@@ -1,59 +1,52 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { GiHamburgerMenu } from "react-icons/gi";
-import { AiOutlineClose } from "react-icons/ai";
+import { AiOutlineDown, AiOutlineUp, AiOutlineClose } from "react-icons/ai";
 import DarkModeToggle from "./DarkModeToggle";
+import { signIn, signOut, useSession } from "next-auth/react";
 
-// Reusable nav items array
-const navItems = [
+// Define all navigation items (admin is protected)
+const fullNavItems = [
   { label: "Home", path: "/" },
   { label: "Scales", path: "/scales" },
   { label: "Analytics", path: "/analytics" },
   { label: "About", path: "/about" },
-  { label: "Admin", path: "/admin" },
+  { label: "Admin", path: "/admin", protected: true },
 ];
 
 export default function Navbar() {
+  const { data: session } = useSession();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // For desktop dropdown
 
-  // Determine if a link matches the current route
   const isActive = (path) => pathname === path;
-
-  // Toggle mobile menu visibility
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen((prev) => !prev);
-  };
-
-  // Close menu (used in multiple places)
+  const toggleMobileMenu = () => setIsMobileMenuOpen((prev) => !prev);
   const closeMenu = () => setIsMobileMenuOpen(false);
 
-  // Listen for ESC key to close mobile menu
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        closeMenu();
-      }
+      if (e.key === "Escape") closeMenu();
     };
-
     if (isMobileMenuOpen) {
       document.addEventListener("keydown", handleKeyDown);
-    } else {
-      document.removeEventListener("keydown", handleKeyDown);
     }
-
-    // Cleanup on unmount
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isMobileMenuOpen]);
 
+  // Filter nav items by session
+  const navItems = fullNavItems.filter((item) => {
+    if (item.protected && !session) return false;
+    return true;
+  });
+
   return (
-    <nav className=" shadow-md p-4 relative z-50">
+    <nav className="shadow-md p-4 relative z-50">
       <div className="flex items-center justify-between">
-        {/* Left: Logo and dark mode toggle */}
+        {/* Left: logo + toggle */}
         <div className="flex items-center space-x-4">
           <DarkModeToggle />
           <Link href="/" className="text-xl font-semibold text-gray-500">
@@ -61,7 +54,7 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* Mobile: Hamburger toggle button */}
+        {/* Mobile menu toggle */}
         <div className="md:hidden">
           <button
             onClick={toggleMobileMenu}
@@ -76,35 +69,71 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Desktop: Navigation links */}
+        {/* Desktop nav items */}
         <div className="hidden md:flex space-x-6 items-center">
           {navItems.map(({ path, label }) => (
             <Link
               key={path}
               href={path}
               className={`hover:text-blue-600 ${
-                isActive(path)
-                  ? "text-blue-600"
-                  : "text-gray-500"
+                isActive(path) ? "text-blue-600" : "text-gray-500"
               }`}
             >
               {label}
             </Link>
           ))}
-          <Link
-            href="/login"
-            className={`hover:text-blue-600 ${
-              isActive("/login")
-                ? "text-blue-600"
-                : "text-gray-500"
-            }`}
-          >
-            Login
-          </Link>
+
+          {!session ? (
+            <button
+              onClick={() => signIn("google")}
+              className="text-gray-500 hover:text-blue-600"
+            >
+              Login
+            </button>
+          ) : (
+            <div className="relative">
+              <button
+                onClick={() => setIsDropdownOpen((prev) => !prev)}
+                className="flex items-center space-x-2 focus:outline-none"
+              >
+                {session.user.image && (
+                  <img
+                    src={session.user.image}
+                    alt="User Avatar"
+                    className="w-8 h-8 rounded-full border border-gray-300"
+                  />
+                )}
+                {session.user.name && (
+                  <span className="text-gray-600 text-sm">
+                    {session.user.name}
+                  </span>
+                )}
+                {isDropdownOpen ? (
+                  <AiOutlineUp className="w-4 h-4 text-gray-400" />
+                ) : (
+                  <AiOutlineDown className="w-4 h-4 text-gray-400" />
+                )}
+              </button>
+
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-6 w-20 rounded  bg-gray-700 rounded shadow-lg z-50">
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      signOut();
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm cursor-pointer text-red-200"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Mobile: Sliding drawer menu */}
+      {/* Mobile drawer */}
       <div
         className={`fixed top-0 right-0 h-full w-2/3 max-w-xs bg-white dark:bg-black shadow-lg transform transition-transform duration-300 ease-in-out z-40 ${
           isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
@@ -125,21 +154,46 @@ export default function Navbar() {
               {label}
             </Link>
           ))}
-          <Link
-            href="/login"
-            className={`text-lg hover:text-blue-600 ${
-              isActive("/login")
-                ? "text-blue-600"
-                : "text-gray-800 dark:text-gray-300"
-            }`}
-            onClick={closeMenu}
-          >
-            Login
-          </Link>
+
+          {!session ? (
+            <button
+              onClick={() => {
+                signIn("google");
+                closeMenu();
+              }}
+              className="text-lg text-gray-800 dark:text-gray-300 hover:text-blue-600 text-left"
+            >
+              Login
+            </button>
+          ) : (
+            <div className="flex items-center space-x-3">
+              {session.user.image && (
+                <img
+                  src={session.user.image}
+                  alt="User Avatar"
+                  className="w-8 h-8 rounded-full border border-gray-300"
+                />
+              )}
+              {session.user.name && (
+                <span className="text-gray-600 text-sm">
+                  {session.user.name}
+                </span>
+              )}
+              <button
+                onClick={() => {
+                  signOut();
+                  closeMenu();
+                }}
+                className="text-lg text-red-500 hover:text-red-600 text-left cursor-pointer"
+              >
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Mobile: Click-outside overlay */}
+      {/* Mobile overlay */}
       {isMobileMenuOpen && (
         <div
           onClick={closeMenu}
