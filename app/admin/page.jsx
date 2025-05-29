@@ -130,7 +130,7 @@ const AdminPage = () => {
                   <td className="px-4 py-2 border">
                     <button
                       onClick={() => openModal(scale)}
-                      className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center whitespace-nowrap min-w-[80px]"
                     >
                       ✏️ Edit
                     </button>
