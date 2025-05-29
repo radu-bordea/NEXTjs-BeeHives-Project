@@ -1,22 +1,23 @@
-"use client"; // Enables client-side rendering in Next.js app
+"use client";
 
 import { useState, useEffect } from "react";
 
 const AdminPage = () => {
-  // Local state for scale data, loading indicator, selected scale, input field, and modal state
   const [scales, setScales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedScale, setSelectedScale] = useState(null);
   const [newName, setNewName] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // 📦 Fetch scale data from API
+  // Fetch scales from backend
   const fetchScales = async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/scales");
       const data = await res.json();
-      // Fallback to empty array if data.scales is undefined
       setScales(data.scales || []);
     } catch (err) {
       console.error("❌ Error loading scales:", err);
@@ -25,59 +26,83 @@ const AdminPage = () => {
     }
   };
 
-  // 🔁 Run fetchScales once after component mounts
   useEffect(() => {
     fetchScales();
   }, []);
 
-  // 📝 Open modal and prepare scale data for editing
+  // Open modal and prefill existing data
   const openModal = (scale) => {
     setSelectedScale(scale);
-    setNewName(scale.name || ""); // Pre-fill input if name exists
+    setNewName(scale.name || "");
+    setLatitude(scale.latitude || "");
+    setLongitude(scale.longitude || "");
+    setErrorMessage("");
     setModalOpen(true);
   };
 
-  // 💾 Save new or edited name for selected scale
+  // Coordinate validation
+  const isValidCoordinate = (value, min, max) => {
+    const num = parseFloat(value);
+    return !isNaN(num) && num >= min && num <= max;
+  };
+
+  // Save updates to backend
   const handleSave = async () => {
     if (!selectedScale) return;
+
+    if (
+      !isValidCoordinate(latitude, -90, 90) ||
+      !isValidCoordinate(longitude, -180, 180)
+    ) {
+      setErrorMessage(
+        "❌ Please enter a valid latitude (-90 to 90) and longitude (-180 to 180)."
+      );
+      return;
+    }
+
     try {
       const res = await fetch(`/api/scales/${selectedScale.scale_id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName }),
+        body: JSON.stringify({
+          name: newName,
+          latitude,
+          longitude,
+        }),
       });
 
       if (res.ok) {
-        // Update the local state with new name
         setScales((prev) =>
           prev.map((s) =>
-            s.scale_id === selectedScale.scale_id ? { ...s, name: newName } : s
+            s.scale_id === selectedScale.scale_id
+              ? { ...s, name: newName, latitude, longitude }
+              : s
           )
         );
-        setModalOpen(false); // Close modal on success
+        setModalOpen(false);
       } else {
         console.error("❌ Failed to update scale");
       }
     } catch (err) {
-      console.error("❌ Error saving scale name:", err);
+      console.error("❌ Error saving scale:", err);
     }
   };
 
   return (
     <div className="p-6 text-gray-500">
-      {/* 🔧 Page Header */}
       <h1 className="text-2xl font-bold mb-6">🔧 Admin Page – Manage Scales</h1>
 
-      {/* 📥 Loading indicator OR table display */}
       {loading ? (
         <p>Loading scales...</p>
       ) : (
-        // ✅ Responsive wrapper to allow horizontal scroll on mobile
         <div className="overflow-x-auto">
           <table className="min-w-full border border-gray-300 rounded-md">
             <thead className="dark:bg-gray-800 text-gray-400 text-left">
               <tr>
-                <th className="px-4 py-2 border">Serial Number -- Name</th>
+                <th className="px-4 py-2 border">Serial Number</th>
+                <th className="px-4 py-2 border">Name</th>
+                <th className="px-4 py-2 border">Latitude</th>
+                <th className="px-4 py-2 border">Longitude</th>
                 <th className="px-4 py-2 border">Actions</th>
               </tr>
             </thead>
@@ -85,20 +110,29 @@ const AdminPage = () => {
               {scales.map((scale) => (
                 <tr key={scale.scale_id} className="border-t">
                   <td className="px-4 py-2 border dark:text-gray-400">
-                    {scale.serial_number} - {" "}
-                    <span className="dark:text-gray-400">
-                      {scale.name || (
-                        <span className="text-red-300 italic">No name</span>
-                      )}
-                    </span>
+                    {scale.serial_number}
                   </td>
-
+                  <td className="px-4 py-2 border dark:text-gray-400">
+                    {scale.name || (
+                      <span className="text-red-300 italic">No name</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2 border dark:text-gray-400">
+                    {scale.latitude || (
+                      <span className="text-red-300 italic">No lat</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2 border dark:text-gray-400">
+                    {scale.longitude || (
+                      <span className="text-red-300 italic">No long</span>
+                    )}
+                  </td>
                   <td className="px-4 py-2 border">
                     <button
                       onClick={() => openModal(scale)}
                       className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
-                      ✏️ {scale.name ? "Edit" : "Add"} Name
+                      ✏️ Edit
                     </button>
                   </td>
                 </tr>
@@ -108,16 +142,21 @@ const AdminPage = () => {
         </div>
       )}
 
-      {/* 🧩 Modal for name input */}
+      {/* Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
             <h2 className="text-lg font-bold mb-4">
-              {selectedScale.name ? "Edit" : "Add"} Name for Scale ID:{" "}
+              Edit Scale – ID:{" "}
               <span className="text-blue-600">{selectedScale.scale_id}</span>
             </h2>
 
-            {/* Text input for scale name */}
+            {errorMessage && (
+              <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
+                {errorMessage}
+              </div>
+            )}
+
             <input
               type="text"
               className="w-full border px-4 py-2 rounded mb-4"
@@ -126,7 +165,22 @@ const AdminPage = () => {
               onChange={(e) => setNewName(e.target.value)}
             />
 
-            {/* Modal action buttons */}
+            <input
+              type="text"
+              className="w-full border px-4 py-2 rounded mb-4"
+              placeholder="Enter latitude..."
+              value={latitude}
+              onChange={(e) => setLatitude(e.target.value)}
+            />
+
+            <input
+              type="text"
+              className="w-full border px-4 py-2 rounded mb-4"
+              placeholder="Enter longitude..."
+              value={longitude}
+              onChange={(e) => setLongitude(e.target.value)}
+            />
+
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setModalOpen(false)}

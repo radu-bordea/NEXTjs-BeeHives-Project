@@ -76,7 +76,7 @@ export async function GET() {
       .aggregate([
         {
           $lookup: {
-            from: "scale_names", // collection to join
+            from: "scales_info", // collection to join
             localField: "scale_id", // field from scales
             foreignField: "scale_id", // field from scale_names
             as: "name_info", // output array field
@@ -84,7 +84,9 @@ export async function GET() {
         },
         {
           $addFields: {
-            name: { $arrayElemAt: ["$name_info.name", 0] }, // extract name from array
+            name: { $arrayElemAt: ["$name_info.name", 0] },
+            latitude: { $arrayElemAt: ["$name_info.latitude", 0] },
+            longitude: { $arrayElemAt: ["$name_info.longitude", 0] },
           },
         },
         {
