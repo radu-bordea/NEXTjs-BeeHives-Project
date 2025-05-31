@@ -120,7 +120,7 @@ export default function Navbar() {
                   <button
                     onClick={() => {
                       setIsDropdownOpen(false);
-                      signOut();
+                      signOut({ callbackUrl: "/" });
                     }}
                     className="block w-full text-left px-4 py-2 text-sm cursor-pointer text-red-200"
                   >
@@ -181,7 +181,7 @@ export default function Navbar() {
               )}
               <button
                 onClick={() => {
-                  signOut();
+                  signOut({ callbackUrl: "/" });
                   closeMenu();
                 }}
                 className="text-lg text-red-500 hover:text-red-600 text-left cursor-pointer"
