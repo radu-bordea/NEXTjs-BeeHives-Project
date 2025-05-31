@@ -8,6 +8,7 @@ import SpinnerSmall from "../components/SpinnerSmall";
 import Loading from "../components/Loading";
 import ScaleCard from "../components/ScaleCard";
 import Table from "../components/Table";
+import { signIn, signOut, useSession } from "next-auth/react";
 
 export default function ScalesPage() {
   const [scales, setScales] = useState([]);
@@ -21,6 +22,8 @@ export default function ScalesPage() {
   const [scaleDataDaily, setScaleDataDaily] = useState(null);
   const [error, setError] = useState(null);
   const router = useRouter();
+
+  const { data: session, status } = useSession();
 
   const fetchScales = async () => {
     setLoading(true);
@@ -161,13 +164,15 @@ export default function ScalesPage() {
     <div className="relative p-6">
       {syncing && <Spinner />}
       <h1 className="text-2xl font-bold mb-4">🐝 Beehive Scales</h1>
-      <button
-        onClick={syncScales}
-        disabled={syncing}
-        className="mb-6 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-500 transition disabled:opacity-50"
-      >
-        {syncing ? "Syncing..." : "🔄 Sync Scales from API"}
-      </button>
+      {status === "authenticated" && (
+        <button
+          onClick={syncScales}
+          disabled={syncing}
+          className="mb-6 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-500 transition disabled:opacity-50"
+        >
+          {syncing ? "Syncing..." : "🔄 Sync Scales from API"}
+        </button>
+      )}
       {loading ? (
         <Loading title="Loading Page..." />
       ) : (
