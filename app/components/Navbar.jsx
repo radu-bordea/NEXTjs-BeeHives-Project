@@ -13,7 +13,7 @@ const fullNavItems = [
   { label: "Home", path: "/" },
   { label: "Scales", path: "/scales" },
   { label: "Analytics", path: "/analytics" },
-  { label: "About", path: "/about" },
+  { label: "Maps", path: "/maps" },
   { label: "Admin", path: "/admin", protected: true },
 ];
 
