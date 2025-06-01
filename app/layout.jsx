@@ -6,7 +6,7 @@ import "./globals.css";
 export const metadata = {
   title: "BeeHives Project",
   keywords: "scales, production, measurements",
-  description: "check evolution oof behives data",
+  description: "Check evolution of beehives data",
 };
 
 const MainLayout = ({ children }) => {
