@@ -6,6 +6,8 @@ const Map = ({ scales }) => {
   const mapRef = useRef(null); // Ref to attach the Google Map to a DOM element
   const [mapLoaded, setMapLoaded] = useState(false); // State to track if the Google Maps script is loaded
 
+console.log(scales)
+
   // Effect to dynamically load the Google Maps JavaScript API
   useEffect(() => {
     const scriptId = "google-maps-script";
@@ -55,6 +57,9 @@ const Map = ({ scales }) => {
         lng: parseFloat(scales[0].longitude),
       },
       zoom: 10, // Default zoom level
+      scaleControl: true, // ✅ Show scale bar
+      gestureHandling: "auto", // ✅ allows zooming and panning with gestures
+      scrollwheel: true, // ✅ allows mouse wheel zoom
     });
 
     // Add a marker for each scale point
@@ -80,7 +85,7 @@ const Map = ({ scales }) => {
   }, [mapLoaded, scales]); // Re-run when map loads or data changes
 
   // Render the map container
-  return <div ref={mapRef} className="w-full h-3/4" />;
+  return <div ref={mapRef} className="w-full h-full" />;
 };
 
 export default Map;
