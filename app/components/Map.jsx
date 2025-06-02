@@ -1,12 +1,15 @@
 "use client"; // Marks this as a client-side component (needed for browser-only APIs like `window`)
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const Map = ({ scales }) => {
   const mapRef = useRef(null); // Ref to attach the Google Map to a DOM element
   const [mapLoaded, setMapLoaded] = useState(false); // State to track if the Google Maps script is loaded
 
-console.log(scales)
+  console.log(scales);
+
+  const router = useRouter();
 
   // Effect to dynamically load the Google Maps JavaScript API
   useEffect(() => {
@@ -73,14 +76,30 @@ console.log(scales)
         title: scale.name,
       });
 
-      // Add an info window that shows scale name and ID when clicked
+      // Add an info window that shows scale name and ID when clicked, and scales button
       const infowindow = new window.google.maps.InfoWindow({
-        content: `<strong>${scale.name}</strong><br/>ID: ${scale.scale_id}`,
+        content: `
+          <strong>${scale.name}</strong><br/>
+          Scale ID: ${scale.scale_id}<br/>👉 
+          <a href="/scales" class="go-to-scales" style="color:blue; text-decoration:underline;">Go To Scales</a>
+        `,
       });
-
+      
+      
       marker.addListener("click", () => {
         infowindow.open(map, marker);
+
+        // Attach click handler to button inside InfoWindow
+        setTimeout(() => {
+          const btn = document.querySelector(".go-to-scales");
+          if (btn) {
+            btn.addEventListener("click", () => {
+              router.push("/scales");
+            });
+          }
+        }, 0);
       });
+      
     });
   }, [mapLoaded, scales]); // Re-run when map loads or data changes
 
