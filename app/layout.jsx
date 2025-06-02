@@ -13,9 +13,9 @@ const MainLayout = ({ children }) => {
   return (
     <AuthProvider>
       <html lang="en" className="overflow-x-hidden">
-        <body className="flex flex-col min-h-screen overflow-x-hidden">
+        <body className="flex flex-col h-screen overflow-hidden">
           <Navbar />
-          <main className="flex-grow">{children}</main>
+          <main className="flex-grow overflow-hidden">{children}</main>
           <Footer />
         </body>
       </html>

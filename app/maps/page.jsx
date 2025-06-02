@@ -35,9 +35,10 @@ const MapsPage = () => {
 
   // Fullscreen layout with no scroll or margin
   return (
-    <div className="h-screen w-screen overflow-hidden m-0 p-0">
-      {loading ? <p>Loading map...</p> : <Map scales={scales} />}{" "}
-      {/* Show map or loading */}
+    <div className="flex flex-col h-full w-full overflow-hidden">
+      <div className="flex-1 overflow-hidden">
+        {loading ? <p>Loading map...</p> : <Map scales={scales} />}
+      </div>
     </div>
   );
 };
