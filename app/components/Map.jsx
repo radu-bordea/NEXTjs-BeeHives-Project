@@ -1,95 +1,145 @@
-"use client"; // Marks this as a client-side component (needed for browser-only APIs like `window`)
+"use client"; // Enables client-side-only features like Google Maps
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const Map = ({ scales }) => {
-  const mapRef = useRef(null); // Ref to attach the Google Map to a DOM element
-  const [mapLoaded, setMapLoaded] = useState(false); // State to track if the Google Maps script is loaded
-
-  console.log(scales);
-
+  const mapRef = useRef(null); // Reference to attach the Google Map DOM element
+  const [mapLoaded, setMapLoaded] = useState(false); // Tracks if the Google Maps API has finished loading
   const router = useRouter();
 
-  // Effect to dynamically load the Google Maps JavaScript API
+  // 🔄 Fetch latest data (last 7 daily records) for a given scale
+  const fetchLatestData = async (scaleId) => {
+    try {
+      const resolution = "daily";
+      const limit = 7;
+
+      const res = await fetch(
+        `/api/scale-data/${scaleId}/latest?resolution=${resolution}&limit=${limit}`
+      );
+      const data = await res.json();
+
+      if (!Array.isArray(data) || data.length === 0) return null;
+
+      // 🕒 Pick the most recent data point by comparing timestamps
+      const latest = data.reduce(
+        (latest, entry) =>
+          new Date(entry.time) > new Date(latest.time) ? entry : latest,
+        data[0]
+      );
+
+      // ⬅️ Return all the key metrics we want to display in the InfoWindow
+      return {
+        time: latest?.time ?? null,
+        weight: latest?.weight ?? null,
+        yield: latest?.yield ?? null,
+        temperature: latest?.temperature ?? null,
+        brood: latest?.brood ?? null,
+        humidity: latest?.humidity ?? null,
+      };
+    } catch (err) {
+      console.error(`Error fetching data for scale ${scaleId}:`, err);
+      return null;
+    }
+  };
+
+  // 🗺️ Load Google Maps JavaScript API dynamically on mount
   useEffect(() => {
     const scriptId = "google-maps-script";
 
-    // Function that returns a promise to load the script
     const loadGoogleMapsScript = () => {
       return new Promise((resolve) => {
-        // If already loaded, resolve immediately
+        // ✅ Already loaded
         if (window.google && window.google.maps) {
           resolve();
           return;
         }
 
-        // If script not yet added to the document, create and append it
+        // 🧩 Append script if it doesn't exist
         if (!document.getElementById(scriptId)) {
           const script = document.createElement("script");
           script.id = scriptId;
           script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`;
           script.async = true;
-          script.onload = resolve; // Resolve when script is loaded
+          script.onload = resolve;
           document.body.appendChild(script);
         } else {
-          // Script exists but not ready yet — poll until available
+          // ⏳ Poll until Google Maps becomes available
           const interval = setInterval(() => {
             if (window.google && window.google.maps) {
               clearInterval(interval);
               resolve();
             }
-          }, 300); // Check every 300ms
+          }, 300);
         }
       });
     };
 
-    // Start loading the script
+    // 🔁 Load the map script once and set flag
     loadGoogleMapsScript().then(() => setMapLoaded(true));
   }, []);
 
-  // Effect to initialize the map once the script and data are ready
+  // 🗺️ Create and render the map + markers once everything is ready
   useEffect(() => {
-    // Guard: wait until the script is loaded, ref is mounted, and data is present
+    // ✅ Guard clause: wait for script + map ref + data
     if (!mapLoaded || !mapRef.current || scales.length === 0) return;
 
-    // Create a new Google Map instance
+    // 🌍 Initialize the Google Map instance
     const map = new window.google.maps.Map(mapRef.current, {
       center: {
-        lat: parseFloat(scales[0].latitude), // Start centered at first scale location
+        lat: parseFloat(scales[0].latitude),
         lng: parseFloat(scales[0].longitude),
       },
-      zoom: 10, // Default zoom level
-      scaleControl: true, // ✅ Show scale bar
-      gestureHandling: "auto", // ✅ allows zooming and panning with gestures
-      scrollwheel: true, // ✅ allows mouse wheel zoom
+      zoom: 10,
+      scaleControl: true,
+      gestureHandling: "auto",
+      scrollwheel: true,
     });
 
-    // Add a marker for each scale point
-    scales.forEach((scale) => {
+    // 📍 Add a marker for each scale with an info window
+    scales.forEach(async (scale) => {
+      const position = {
+        lat: parseFloat(scale.latitude),
+        lng: parseFloat(scale.longitude),
+      };
+
       const marker = new window.google.maps.Marker({
-        position: {
-          lat: parseFloat(scale.latitude),
-          lng: parseFloat(scale.longitude),
-        },
+        position,
         map,
         title: scale.name,
       });
 
-      // Add an info window that shows scale name and ID when clicked, and scales button
+      // 📦 Fetch the latest 7-day data and pick the most recent
+      const latestData = await fetchLatestData(scale.scale_id);
+
+      // ℹ️ Build the HTML content for the marker's info window
       const infowindow = new window.google.maps.InfoWindow({
         content: `
-          <strong>${scale.name}</strong><br/>
-          Scale ID: ${scale.scale_id}<br/>👉 
-          <a href="/scales" class="go-to-scales" style="color:blue; text-decoration:underline;">Go To Scales</a>
+          <div>
+            <strong>${scale.name}</strong><br/>
+            Scale ID: ${scale.scale_id}<br/>
+            ${
+              latestData
+                ? `
+                  Date: ${new Date(latestData.time).toLocaleDateString()}<br/>
+                  Weight: <strong>${latestData.weight ?? "N/A"} kg</strong><br/>
+                  Yield: ${latestData.yield ?? "N/A"}<br/>
+                  Temp: ${latestData.temperature ?? "N/A"} °C<br/>
+                  Brood: ${latestData.brood ?? "N/A"}<br/>
+                  Humidity: ${latestData.humidity ?? "N/A"}<br/>
+                `
+                : "No recent data available.<br/>"
+            }
+            👉 <a href="/scales" class="go-to-scales" style="color:blue; text-decoration:underline;">Go To Scales</a>
+          </div>
         `,
       });
-      
-      
+
+      // 🖱️ Open the info window when the marker is clicked
       marker.addListener("click", () => {
         infowindow.open(map, marker);
 
-        // Attach click handler to button inside InfoWindow
+        // 📦 Attach navigation handler to internal link
         setTimeout(() => {
           const btn = document.querySelector(".go-to-scales");
           if (btn) {
@@ -99,11 +149,10 @@ const Map = ({ scales }) => {
           }
         }, 0);
       });
-      
     });
-  }, [mapLoaded, scales]); // Re-run when map loads or data changes
+  }, [mapLoaded, scales]);
 
-  // Render the map container
+  // 🧱 Render the map container div
   return <div ref={mapRef} className="w-full h-full" />;
 };
 
