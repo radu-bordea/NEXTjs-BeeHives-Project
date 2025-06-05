@@ -130,7 +130,8 @@ const Map = ({ scales }) => {
                 `
                 : "No recent data available.<br/>"
             }
-            👉 <a href="/scales" class="go-to-scales" style="color:blue; text-decoration:underline;">Go To Scales</a>
+            👉 <a href="/scales" class="go-to-scales" style="color:blue; text-decoration:underline;">Go To Scales</a></br>
+            👉 <a href="/scales/${scale.scale_id}" class="go-to-scales" style="color:blue; text-decoration:underline;">${scale.name} charts</a>
           </div>
         `,
       });
