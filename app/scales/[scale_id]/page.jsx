@@ -18,7 +18,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { forwardRef } from "react";
 
-// ✅ Custom Button Component for DatePicker
+// ✅ Custom Button for the DatePicker (styled)
 const CustomInputButton = forwardRef(({ value, onClick }, ref) => (
   <button
     onClick={onClick}
@@ -30,22 +30,26 @@ const CustomInputButton = forwardRef(({ value, onClick }, ref) => (
 ));
 
 export default function ScaleDetailPage({ params }) {
+  // State to hold all scales
   const [scales, setScales] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Define default dates (last 7 days)
   const today = new Date();
   const weekAgo = new Date();
   weekAgo.setDate(today.getDate() - 7);
 
-  const { scale_id } = use(params); // from props, as string
+  const { scale_id } = use(params); // Get scale_id from route params
 
-  const [selectedResolution, setSelectedResolution] = useState("daily");
+  // UI state
+  const [selectedResolution, setSelectedResolution] = useState("daily"); // hourly/daily
   const [chartData, setChartData] = useState([]);
   const [startDate, setStartDate] = useState(weekAgo);
   const [endDate, setEndDate] = useState(today);
   const [previewFetched, setPreviewFetched] = useState(false);
   const [loadingFull, setLoadingFull] = useState(false);
 
+  // Fetch list of available scales (for naming/display)
   const fetchScales = async () => {
     setLoading(true);
     try {
@@ -63,9 +67,11 @@ export default function ScaleDetailPage({ params }) {
     fetchScales();
   }, []);
 
+  // Fetch chart data (preview first, then full)
   useEffect(() => {
     let didCancel = false;
 
+    // Preview: fetch latest 20 records
     const fetchPreview = async () => {
       try {
         const res = await fetch(
@@ -90,6 +96,7 @@ export default function ScaleDetailPage({ params }) {
       }
     };
 
+    // Full: fetch all data within date range
     const fetchFull = async () => {
       if (!startDate || !endDate || startDate > endDate) return;
       const startISO = startDate.toISOString();
@@ -122,8 +129,8 @@ export default function ScaleDetailPage({ params }) {
       }
     };
 
-    fetchPreview();
-    const delay = setTimeout(fetchFull, 1500);
+    fetchPreview(); // quick preview first
+    const delay = setTimeout(fetchFull, 1500); // full data delayed
 
     return () => {
       didCancel = true;
@@ -131,9 +138,14 @@ export default function ScaleDetailPage({ params }) {
     };
   }, [scale_id, selectedResolution, startDate, endDate]);
 
+  // Compute min/max for Y axis zoom domains
   const weightData = chartData.map((entry) => entry.weight);
   const minWeight = Math.min(...weightData);
   const maxWeight = Math.max(...weightData);
+
+  const broodData = chartData.map((entry) => entry.brood);
+  const minBrood = Math.min(...broodData);
+  const maxBrood = Math.max(...broodData);
 
   const selectedScale = scales.find(
     (scale) => String(scale.scale_id) === String(scale_id)
@@ -141,10 +153,12 @@ export default function ScaleDetailPage({ params }) {
 
   return (
     <div className="p-1 md:p-4 text-gray-500">
+      {/* Header */}
       <h1 className="text-xl font-bold mb-2 ml-8">
         📊 {selectedScale?.name || `ID: ${scale_id}`}
       </h1>
 
+      {/* Resolution Toggle Buttons */}
       <div className="flex md:flex-row mb-5 ml-4 gap-4 mt-8">
         <button
           onClick={() => setSelectedResolution("hourly")}
@@ -168,9 +182,10 @@ export default function ScaleDetailPage({ params }) {
         </button>
       </div>
 
+      {/* Date Range Picker */}
       <div className="flex flex-col md:flex-row gap-2 mb-4 mx-4 md:mx-8">
-        <div >
-          <label className="inline-block font-medium px-2 mb-1">Start: </label>{" "}
+        <div>
+          <label className="inline-block font-medium px-2 mb-1">Start: </label>
           <DatePicker
             selected={startDate}
             onChange={(date) => setStartDate(date)}
@@ -180,7 +195,9 @@ export default function ScaleDetailPage({ params }) {
           />
         </div>
         <div>
-          <label className="inline-block font-medium px-2 mb-1 mr-2 md:mr-0">End: </label>{" "}
+          <label className="inline-block font-medium px-2 mb-1 mr-2 md:mr-0">
+            End:
+          </label>
           <DatePicker
             selected={endDate}
             onChange={(date) => setEndDate(date)}
@@ -191,6 +208,7 @@ export default function ScaleDetailPage({ params }) {
         </div>
       </div>
 
+      {/* Loading / Status Messages */}
       {!previewFetched && (
         <div className="text-center text-gray-500 my-4">
           Loading preview data...
@@ -208,7 +226,8 @@ export default function ScaleDetailPage({ params }) {
         </div>
       )}
 
-      {/* Chart Sections */}
+      {/* Charts */}
+      {/* Weight Line Chart */}
       <ResponsiveContainer width="98%" height={200} className="mt-4">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
@@ -228,6 +247,7 @@ export default function ScaleDetailPage({ params }) {
         </LineChart>
       </ResponsiveContainer>
 
+      {/* Yield Line Chart */}
       <ResponsiveContainer width="98%" height={200} className="mt-4">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
@@ -244,6 +264,7 @@ export default function ScaleDetailPage({ params }) {
         </LineChart>
       </ResponsiveContainer>
 
+      {/* Temperature Line Chart */}
       <ResponsiveContainer width="98%" height={200} className="mt-4">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
@@ -260,11 +281,12 @@ export default function ScaleDetailPage({ params }) {
         </LineChart>
       </ResponsiveContainer>
 
+      {/* Brood Line Chart with zoom domain */}
       <ResponsiveContainer width="98%" height={200} className="mt-4">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
           <XAxis dataKey="time" />
-          <YAxis />
+          <YAxis domain={[minBrood - 1, maxBrood + 1]} />
           <Tooltip />
           <Legend />
           <Line
@@ -276,6 +298,7 @@ export default function ScaleDetailPage({ params }) {
         </LineChart>
       </ResponsiveContainer>
 
+      {/* Humidity Bar Chart */}
       <ResponsiveContainer width="98%" height={200} className="mt-8">
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
