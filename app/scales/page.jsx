@@ -1,30 +1,62 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import Spinner from "../components/Spinner";
-import SpinnerSmall from "../components/SpinnerSmall";
 import Loading from "../components/Loading";
 import ScaleCard from "../components/ScaleCard";
 import Table from "../components/Table";
-import { signIn, signOut, useSession } from "next-auth/react";
+import getPageRange from "@/utils/paginationRange"; // or your relative path
+import { useSession } from "next-auth/react";
 
 export default function ScalesPage() {
-  const [scales, setScales] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadTableData, setLoadTableData] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [perScaleSyncing, setPerScaleSyncing] = useState({});
-  const [selectedScale, setSelectedScale] = useState(null); // Updated
-  const [selectedResolution, setSelectedResolution] = useState("hourly");
-  const [scaleDataHourly, setScaleDataHourly] = useState(null);
-  const [scaleDataDaily, setScaleDataDaily] = useState(null);
-  const [error, setError] = useState(null);
+  // --- State setup ---
+  const [scales, setScales] = useState([]); // list of all scales
+  const [loading, setLoading] = useState(true); // page loading
+  const [loadTableData, setLoadTableData] = useState(false); // show table loading
+  const [syncing, setSyncing] = useState(false); // sync all scales
+  const [perScaleSyncing, setPerScaleSyncing] = useState({}); // syncing individual scale
+  const [selectedScale, setSelectedScale] = useState(null); // scale selected for table
+  const [selectedResolution, setSelectedResolution] = useState("hourly"); // current resolution
+  const [scaleDataHourly, setScaleDataHourly] = useState(null); // hourly data
+  const [scaleDataDaily, setScaleDataDaily] = useState(null); // daily data
+  const [error, setError] = useState(null); // error message
+  const [currentPage, setCurrentPage] = useState(1); // current page number
+  const rowsPerPage = 15; // max rows per page
   const router = useRouter();
+  const { data: session, status } = useSession(); // current user session
 
-  const { data: session, status } = useSession();
+  // Choose the correct data depending on resolution
+  const fullData =
+    selectedResolution === "hourly" ? scaleDataHourly : scaleDataDaily;
 
+  // Paginate the fullData array (no sorting applied here)
+  const paginatedData = fullData?.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+
+  // Total pages for pagination
+  const totalPages = fullData ? Math.ceil(fullData.length / rowsPerPage) : 0;
+
+  // --- Arrow key pagination (← and →) ---
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (e.key === "ArrowLeft" && currentPage > 1) {
+        setCurrentPage((p) => Math.max(p - 1, 1));
+      } else if (e.key === "ArrowRight" && currentPage < totalPages) {
+        setCurrentPage((p) => Math.min(p + 1, totalPages));
+      }
+    },
+    [currentPage, totalPages]
+  );
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
+  // --- Fetch all scales from the API ---
   const fetchScales = async () => {
     setLoading(true);
     try {
@@ -39,24 +71,23 @@ export default function ScalesPage() {
     }
   };
 
+  // When a scale card is clicked
   const handleData = (id) => {
     const scale = scales.find((s) => s.scale_id === id);
     if (scale) {
-      setSelectedScale(scale); // Store full scale
+      setSelectedScale(scale);
       fetchScaleData(id);
       setLoadTableData(true);
     }
   };
 
+  // Sync all scales from external API
   const syncScales = async () => {
     setSyncing(true);
     try {
       const res = await fetch("/api/scales", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       });
       const data = await res.json();
 
@@ -66,6 +97,7 @@ export default function ScalesPage() {
         setScales(freshScales);
         setLoading(false);
 
+        // Trigger data load for each scale
         freshScales.forEach(async (scale) => {
           setPerScaleSyncing((prev) => ({
             ...prev,
@@ -73,27 +105,9 @@ export default function ScalesPage() {
           }));
 
           try {
-            const scaleDataRes = await fetch(
-              `/api/scale-data/${scale.scale_id}`,
-              { method: "POST" }
-            );
-
-            if (!scaleDataRes.ok) {
-              let errorMessage = "Unknown error";
-              try {
-                const errorData = await scaleDataRes.json();
-                errorMessage = errorData.error || errorMessage;
-              } catch (e) {
-                console.warn(
-                  `⚠️ Could not parse error body for scale ${scale.scale_id}`,
-                  e
-                );
-              }
-
-              console.error(
-                `❌ Failed to sync data for scale ${scale.scale_id}: ${errorMessage}`
-              );
-            }
+            await fetch(`/api/scale-data/${scale.scale_id}`, {
+              method: "POST",
+            });
           } catch (err) {
             console.error(`❌ Error syncing scale ${scale.scale_id}:`, err);
           } finally {
@@ -114,17 +128,18 @@ export default function ScalesPage() {
     }
   };
 
+  // Load scale data for hourly/daily
   const fetchScaleData = async (scaleId, resolution = "hourly") => {
     setSelectedResolution(resolution);
     setScaleDataHourly(null);
     setScaleDataDaily(null);
     setError(null);
+    setCurrentPage(1); // reset pagination
 
     try {
       const res = await fetch(
         `/api/scale-data/${scaleId}?resolution=${resolution}`
       );
-
       if (!res.ok) throw new Error("Full data not yet available");
 
       const data = await res.json();
@@ -136,9 +151,7 @@ export default function ScalesPage() {
         setScaleDataDaily(data);
       }
     } catch (err) {
-      console.warn(
-        `⚠️ Full data missing for scale ${scaleId}, trying preview...`
-      );
+      console.warn("⚠️ Full data missing, trying preview...");
       try {
         const fallbackRes = await fetch(
           `/api/scale-data/${scaleId}/latest?resolution=${resolution}&limit=20`
@@ -150,7 +163,7 @@ export default function ScalesPage() {
           setScaleDataDaily(fallback);
         }
       } catch (fallbackErr) {
-        console.error("❌ Failed to load even fallback preview:", fallbackErr);
+        console.error("❌ Fallback failed:", fallbackErr);
         setError("Failed to load any data for this scale.");
       }
     }
@@ -160,10 +173,49 @@ export default function ScalesPage() {
     fetchScales();
   }, []);
 
+  // --- Pagination controls renderer ---
+  const renderPagination = () =>
+    totalPages > 1 && (
+      <div className="flex justify-center mt-4 space-x-1 flex-wrap">
+        <button
+          onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+          disabled={currentPage === 1}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Prev
+        </button>
+
+        {getPageRange(currentPage, totalPages, 2).map((item, index) => (
+          <button
+            key={index}
+            disabled={item === "..."}
+            onClick={() => typeof item === "number" && setCurrentPage(item)}
+            className={`px-3 py-1 border rounded ${
+              item === currentPage
+                ? "bg-indigo-600 text-white"
+                : "hover:bg-gray-100"
+            } ${item === "..." ? "cursor-default opacity-50" : ""}`}
+          >
+            {item}
+          </button>
+        ))}
+
+        <button
+          onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+          disabled={currentPage === totalPages}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
+    );
+
   return (
     <div className="relative p-6">
       {syncing && <Spinner />}
       <h1 className="text-2xl font-bold mb-4">🐝 Beehive Scales</h1>
+
+      {/* Sync button (only for authenticated users) */}
       {status === "authenticated" && (
         <button
           onClick={syncScales}
@@ -173,6 +225,8 @@ export default function ScalesPage() {
           {syncing ? "Syncing..." : "🔄 Sync Scales from API"}
         </button>
       )}
+
+      {/* Show scale cards or loading spinner */}
       {loading ? (
         <Loading title="Loading Page..." />
       ) : (
@@ -192,20 +246,30 @@ export default function ScalesPage() {
         </div>
       )}
 
-      {(scaleDataHourly || scaleDataDaily) && (
-        <Table
-          data={
-            selectedResolution === "hourly" ? scaleDataHourly : scaleDataDaily
-          }
-          selectedResolution={selectedResolution}
-          onResolutionChange={(res) =>
-            fetchScaleData(selectedScale?.scale_id, res)
-          }
-          scaleName={selectedScale?.name || selectedScale?.scale_id}
-        />
+      {/* Table with paginated data */}
+      {paginatedData && (
+        <>
+          {/* Top pagination */}
+          {/* {renderPagination()} */}
+
+          <Table
+            data={paginatedData}
+            selectedResolution={selectedResolution}
+            onResolutionChange={(res) =>
+              fetchScaleData(selectedScale?.scale_id, res)
+            }
+            scaleName={selectedScale?.name || selectedScale?.scale_id}
+          />
+
+          {/* Bottom pagination */}
+          {renderPagination()}
+        </>
       )}
 
+      {/* Table loader */}
       {loadTableData && <Loading title="Loading Table Data..." />}
+
+      {/* Error message */}
       {error && (
         <div className="mt-4 text-red-500">
           <p>{error}</p>
