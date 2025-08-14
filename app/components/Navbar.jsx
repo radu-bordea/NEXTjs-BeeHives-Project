@@ -7,6 +7,7 @@ import { GiHamburgerMenu } from "react-icons/gi";
 import { AiOutlineDown, AiOutlineUp, AiOutlineClose } from "react-icons/ai";
 import DarkModeToggle from "./DarkModeToggle";
 import { signIn, signOut, useSession } from "next-auth/react";
+import Image from "next/image";
 
 // Define all navigation items (admin is protected)
 const fullNavItems = [
@@ -49,8 +50,27 @@ export default function Navbar() {
         {/* Left: logo + toggle */}
         <div className="flex items-center space-x-4">
           <DarkModeToggle />
-          <Link href="/" className="text-xl font-semibold text-gray-500">
-            Logo
+          <Link href="/" className="flex items-center space-x-2">
+            <div className="relative w-10 h-10">
+              <Image
+                src="/assets/images/eulogo.png"
+                alt="Logo"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
+          </Link>
+          <Link href="/" className="flex items-center space-x-2">
+            <div className="relative w-6 h-6">
+              <Image
+                src="/assets/images/halogo.png"
+                alt="Logo"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
           </Link>
         </div>
 
