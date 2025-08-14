@@ -11,7 +11,7 @@ export default function Table({
   return (
     <div className="mt-8">
       <h3 className="text-xl font-semibold mb-4">
-        Measurement Data - {scaleName || "Unknown Scale"}
+        Data - {scaleName || "Unknown Scale"}
       </h3>
 
       <div className="flex mb-4">
