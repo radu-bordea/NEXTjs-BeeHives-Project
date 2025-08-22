@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { MdDarkMode, MdOutlineDarkMode } from "react-icons/md";
 
-export default function DarkModeToggle() {
-  const [isDark, setIsDark] = useState(false);
+export default function DarkModeToggle({isDark, setIsDark}) {
 
   // On mount, read the saved theme or system preference
   useEffect(() => {
@@ -39,7 +38,7 @@ export default function DarkModeToggle() {
   return (
     <button
       onClick={toggleDarkMode}
-      className="text-2xl rounded-full text-gray-800 dark:text-gray-400"
+      className="text-2xl rounded-full"
     >
       {isDark ? <MdDarkMode/> : <MdOutlineDarkMode/>}
     </button>
