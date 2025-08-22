@@ -24,6 +24,8 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // For desktop dropdown
 
+  const [isDark, setIsDark] = useState(false);
+
   const isActive = (path) => pathname === path;
   const toggleMobileMenu = () => setIsMobileMenuOpen((prev) => !prev);
   const closeMenu = () => setIsMobileMenuOpen(false);
@@ -49,7 +51,7 @@ export default function Navbar() {
       <div className="flex items-center justify-between">
         {/* Left: logo + toggle */}
         <div className="flex items-center space-x-4">
-          <DarkModeToggle />
+          <DarkModeToggle isDark={isDark} setIsDark={setIsDark} />
           <Link href="/" className="flex items-center space-x-2">
             <div className="relative w-10 h-10">
               <Image
@@ -62,12 +64,12 @@ export default function Navbar() {
             </div>
           </Link>
           <Link href="/" className="flex items-center space-x-2">
-            <div className="relative w-6 h-6">
+            <div className="relative w-6 h-6 ">
               <Image
                 src="/assets/images/halogo.png"
                 alt="Logo"
                 fill
-                className="object-contain"
+                className={`object-contain ${!isDark ? 'dark:invert' : ''}`}
                 priority
               />
             </div>
