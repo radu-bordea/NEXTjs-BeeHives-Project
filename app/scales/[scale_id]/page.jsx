@@ -18,7 +18,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { forwardRef } from "react";
 
-// ✅ Custom Button for the DatePicker (styled)
+// ✅ Custom Button for DatePicker
 const CustomInputButton = forwardRef(({ value, onClick }, ref) => (
   <button
     onClick={onClick}
@@ -32,12 +32,9 @@ const CustomInputButton = forwardRef(({ value, onClick }, ref) => (
 export default function ScaleDetailPage({ params }) {
   const [scales, setScales] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Default dates → last 7 days
   const today = new Date();
   const weekAgo = new Date();
   weekAgo.setDate(today.getDate() - 7);
-
   const { scale_id } = use(params);
 
   const [selectedResolution, setSelectedResolution] = useState("daily");
@@ -47,7 +44,7 @@ export default function ScaleDetailPage({ params }) {
   const [previewFetched, setPreviewFetched] = useState(false);
   const [loadingFull, setLoadingFull] = useState(false);
 
-  // Fetch list of available scales
+  // ✅ Fetch list of available scales
   const fetchScales = async () => {
     setLoading(true);
     try {
@@ -65,7 +62,7 @@ export default function ScaleDetailPage({ params }) {
     fetchScales();
   }, []);
 
-  // Fetch chart data
+  // ✅ Fetch chart data
   useEffect(() => {
     let didCancel = false;
 
@@ -78,13 +75,12 @@ export default function ScaleDetailPage({ params }) {
         if (!didCancel) {
           const formatted = json.map((entry) => ({
             ...entry,
-            // ✅ Keep raw ISO string
             time: entry.time,
-            weight: entry.weight ?? 0,
-            yield: entry.yield ?? 0,
-            temperature: entry.temperature ?? 0,
-            brood: entry.brood ?? 0,
-            humidity: entry.humidity ?? 0,
+            weight: entry.weight ?? null,
+            yield: entry.yield ?? null,
+            temperature: entry.temperature ?? null,
+            brood: entry.brood ?? null,
+            humidity: entry.humidity ?? null,
           }));
           setChartData(formatted);
           setPreviewFetched(true);
@@ -110,12 +106,12 @@ export default function ScaleDetailPage({ params }) {
         if (!didCancel && Array.isArray(json) && json.length > 0) {
           const formatted = json.map((entry) => ({
             ...entry,
-            time: entry.time, // ✅ Keep ISO string
-            weight: entry.weight ?? 0,
-            yield: entry.yield ?? 0,
-            temperature: entry.temperature ?? 0,
-            brood: entry.brood ?? 0,
-            humidity: entry.humidity ?? 0,
+            time: entry.time,
+            weight: entry.weight ?? null,
+            yield: entry.yield ?? null,
+            temperature: entry.temperature ?? null,
+            brood: entry.brood ?? null,
+            humidity: entry.humidity ?? null,
           }));
           setChartData(formatted);
         }
@@ -135,18 +131,29 @@ export default function ScaleDetailPage({ params }) {
     };
   }, [scale_id, selectedResolution, startDate, endDate]);
 
-  // Compute min/max for Y axis zoom domains
-  const weightData = chartData.map((entry) => entry.weight);
-  const minWeight = Math.min(...weightData);
-  const maxWeight = Math.max(...weightData);
+  // ✅ Helper: check if a chart has data
+  const hasDataForKey = (key) => {
+    return chartData.some(
+      (entry) => entry[key] !== null && entry[key] !== undefined
+    );
+  };
 
-  const broodData = chartData.map((entry) => entry.brood);
-  const minBrood = Math.min(...broodData);
-  const maxBrood = Math.max(...broodData);
+  // ✅ Metrics
+  const lineMetrics = ["weight", "yield", "temperature", "brood"];
+  const barMetric = "humidity";
 
-  const selectedScale = scales.find(
-    (scale) => String(scale.scale_id) === String(scale_id)
+  // ✅ Check if there is any data at all
+  const hasAnyData = [...lineMetrics, barMetric].some((key) =>
+    hasDataForKey(key)
   );
+
+  // ✅ Min/Max for zooming weight and brood charts
+  const weightData = chartData.map((e) => e.weight).filter((v) => v !== null);
+  const broodData = chartData.map((e) => e.brood).filter((v) => v !== null);
+  const minWeight = weightData.length ? Math.min(...weightData) : 0;
+  const maxWeight = weightData.length ? Math.max(...weightData) : 0;
+  const minBrood = broodData.length ? Math.min(...broodData) : 0;
+  const maxBrood = broodData.length ? Math.max(...broodData) : 0;
 
   // ✅ Format Finnish dates for charts
   const formatDate = (value) => {
@@ -164,6 +171,10 @@ export default function ScaleDetailPage({ params }) {
           year: "numeric",
         });
   };
+
+  const selectedScale = scales.find(
+    (scale) => String(scale.scale_id) === String(scale_id)
+  );
 
   return (
     <div className="p-1 md:p-4 text-gray-500">
@@ -248,24 +259,22 @@ export default function ScaleDetailPage({ params }) {
         </div>
       )}
 
-      {/* Charts */}
-      {["weight", "yield", "temperature", "brood", "humidity"].map((key) => (
-        <ResponsiveContainer
-          width="98%"
-          height={200}
-          className="mt-4"
-          key={key}
-        >
-          {key === "humidity" ? (
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-              <XAxis dataKey="time" tickFormatter={formatDate} />
-              <YAxis />
-              <Tooltip labelFormatter={formatDate} />
-              <Legend />
-              <Bar dataKey={key} fill="#1e88e5" />
-            </BarChart>
-          ) : (
+      {/* ✅ Show message if absolutely no data */}
+      {!hasAnyData && !loadingFull && (
+        <div className="text-center text-red-500 text-lg mt-6">
+          ❌ No data available for this scale.
+        </div>
+      )}
+
+      {/* ✅ Line Charts */}
+      {lineMetrics.map((key) =>
+        hasDataForKey(key) ? (
+          <ResponsiveContainer
+            width="98%"
+            height={200}
+            className="mt-4"
+            key={key}
+          >
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
               <XAxis dataKey="time" tickFormatter={formatDate} />
@@ -295,9 +304,28 @@ export default function ScaleDetailPage({ params }) {
                 type="monotone"
               />
             </LineChart>
-          )}
+          </ResponsiveContainer>
+        ) : null
+      )}
+
+      {/* ✅ Humidity Bar Chart */}
+      {hasDataForKey(barMetric) && (
+        <ResponsiveContainer
+          width="98%"
+          height={200}
+          className="mt-4"
+          key={barMetric}
+        >
+          <BarChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
+            <XAxis dataKey="time" tickFormatter={formatDate} />
+            <YAxis />
+            <Tooltip labelFormatter={formatDate} />
+            <Legend />
+            <Bar dataKey={barMetric} fill="#1e88e5" />
+          </BarChart>
         </ResponsiveContainer>
-      ))}
+      )}
     </div>
   );
 }
