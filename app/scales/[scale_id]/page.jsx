@@ -148,8 +148,8 @@ export default function ScaleDetailPage({ params }) {
   };
 
   return (
-    <div className="p-4 text-gray-500">
-      <h1 className="text-xl font-bold mb-6">
+    <div className="p-2 dark:text-gray-400">
+      <h1 className="text-sm font-bold mb-6">
         📊 {selectedScale?.name || `ID: ${scale_id}`}
       </h1>
 
@@ -158,7 +158,7 @@ export default function ScaleDetailPage({ params }) {
         <div className="flex gap-2">
           <button
             onClick={() => setSelectedResolution("hourly")}
-            className={`px-3 py-1 rounded ${
+            className={`px-2 text-sm py-1 rounded ${
               selectedResolution === "hourly"
                 ? "bg-blue-700 text-white"
                 : "bg-gray-200"
@@ -168,7 +168,7 @@ export default function ScaleDetailPage({ params }) {
           </button>
           <button
             onClick={() => setSelectedResolution("daily")}
-            className={`px-3 py-1 rounded ${
+            className={`px-2 text-sm py-1 rounded ${
               selectedResolution === "daily"
                 ? "bg-green-700 text-white"
                 : "bg-gray-200"
@@ -178,7 +178,7 @@ export default function ScaleDetailPage({ params }) {
           </button>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex text-sm gap-2">
           <DatePicker
             selected={startDate}
             onChange={setStartDate}
@@ -210,7 +210,7 @@ export default function ScaleDetailPage({ params }) {
           <button
             key={metric}
             onClick={() => setActiveMetric(metric)}
-            className={`px-3 py-1 rounded ${
+            className={`px-2 text-sm py-1 rounded ${
               activeMetric === metric
                 ? "bg-blue-600 text-white"
                 : "bg-gray-200 text-gray-700"
@@ -224,13 +224,13 @@ export default function ScaleDetailPage({ params }) {
       {/* Y-axis zoom buttons */}
       <div className="flex gap-2 justify-center mb-2">
         <button
-          className="px-3 py-1 text-gray-700 bg-gray-200 rounded hover:bg-gray-400"
+          className="px-2 text-sm py-1 text-gray-700 bg-gray-200 rounded hover:bg-gray-400"
           onClick={zoomInY}
         >
           Zoom In Y
         </button>
         <button
-          className="px-3 py-1 text-gray-700 bg-gray-200 rounded hover:bg-gray-400"
+          className="px-2 text-sm py-1 text-gray-700 bg-gray-200 rounded hover:bg-gray-400"
           onClick={zoomOutY}
         >
           Zoom Out Y
