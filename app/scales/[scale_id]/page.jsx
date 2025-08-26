@@ -25,31 +25,29 @@ const CustomInputButton = forwardRef(({ value, onClick }, ref) => (
     ref={ref}
     className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl shadow transition"
   >
-    📅 <span>{value || "Select date"}</span>
+    📅 <span>{value || "Valitse päivä"}</span>
   </button>
 ));
 
 export default function ScaleDetailPage({ params }) {
-  // State to hold all scales
   const [scales, setScales] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Define default dates (last 7 days)
+  // Default dates → last 7 days
   const today = new Date();
   const weekAgo = new Date();
   weekAgo.setDate(today.getDate() - 7);
 
-  const { scale_id } = use(params); // Get scale_id from route params
+  const { scale_id } = use(params);
 
-  // UI state
-  const [selectedResolution, setSelectedResolution] = useState("daily"); // hourly/daily
+  const [selectedResolution, setSelectedResolution] = useState("daily");
   const [chartData, setChartData] = useState([]);
   const [startDate, setStartDate] = useState(weekAgo);
   const [endDate, setEndDate] = useState(today);
   const [previewFetched, setPreviewFetched] = useState(false);
   const [loadingFull, setLoadingFull] = useState(false);
 
-  // Fetch list of available scales (for naming/display)
+  // Fetch list of available scales
   const fetchScales = async () => {
     setLoading(true);
     try {
@@ -67,11 +65,10 @@ export default function ScaleDetailPage({ params }) {
     fetchScales();
   }, []);
 
-  // Fetch chart data (preview first, then full)
+  // Fetch chart data
   useEffect(() => {
     let didCancel = false;
 
-    // Preview: fetch latest 20 records
     const fetchPreview = async () => {
       try {
         const res = await fetch(
@@ -81,7 +78,8 @@ export default function ScaleDetailPage({ params }) {
         if (!didCancel) {
           const formatted = json.map((entry) => ({
             ...entry,
-            time: new Date(entry.time).toLocaleString(),
+            // ✅ Keep raw ISO string
+            time: entry.time,
             weight: entry.weight ?? 0,
             yield: entry.yield ?? 0,
             temperature: entry.temperature ?? 0,
@@ -96,7 +94,6 @@ export default function ScaleDetailPage({ params }) {
       }
     };
 
-    // Full: fetch all data within date range
     const fetchFull = async () => {
       if (!startDate || !endDate || startDate > endDate) return;
       const startISO = startDate.toISOString();
@@ -113,7 +110,7 @@ export default function ScaleDetailPage({ params }) {
         if (!didCancel && Array.isArray(json) && json.length > 0) {
           const formatted = json.map((entry) => ({
             ...entry,
-            time: new Date(entry.time).toLocaleString(),
+            time: entry.time, // ✅ Keep ISO string
             weight: entry.weight ?? 0,
             yield: entry.yield ?? 0,
             temperature: entry.temperature ?? 0,
@@ -129,8 +126,8 @@ export default function ScaleDetailPage({ params }) {
       }
     };
 
-    fetchPreview(); // quick preview first
-    const delay = setTimeout(fetchFull, 1500); // full data delayed
+    fetchPreview();
+    const delay = setTimeout(fetchFull, 1500);
 
     return () => {
       didCancel = true;
@@ -150,6 +147,23 @@ export default function ScaleDetailPage({ params }) {
   const selectedScale = scales.find(
     (scale) => String(scale.scale_id) === String(scale_id)
   );
+
+  // ✅ Format Finnish dates for charts
+  const formatDate = (value) => {
+    const date = new Date(value);
+    return selectedResolution === "hourly"
+      ? date.toLocaleString("fi-FI", {
+          day: "2-digit",
+          month: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : date.toLocaleDateString("fi-FI", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+  };
 
   return (
     <div className="p-1 md:p-4 text-gray-500">
@@ -190,7 +204,11 @@ export default function ScaleDetailPage({ params }) {
             selected={startDate}
             onChange={(date) => setStartDate(date)}
             showTimeSelect={selectedResolution === "hourly"}
-            dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
+            dateFormat={
+              selectedResolution === "hourly"
+                ? "dd.MM.yyyy HH:mm"
+                : "dd.MM.yyyy"
+            }
             customInput={<CustomInputButton />}
           />
         </div>
@@ -202,13 +220,17 @@ export default function ScaleDetailPage({ params }) {
             selected={endDate}
             onChange={(date) => setEndDate(date)}
             showTimeSelect={selectedResolution === "hourly"}
-            dateFormat={selectedResolution === "hourly" ? "Pp" : "P"}
+            dateFormat={
+              selectedResolution === "hourly"
+                ? "dd.MM.yyyy HH:mm"
+                : "dd.MM.yyyy"
+            }
             customInput={<CustomInputButton />}
           />
         </div>
       </div>
 
-      {/* Loading / Status Messages */}
+      {/* Status Messages */}
       {!previewFetched && (
         <div className="text-center text-gray-500 my-4">
           Loading preview data...
@@ -227,88 +249,55 @@ export default function ScaleDetailPage({ params }) {
       )}
 
       {/* Charts */}
-      {/* Weight Line Chart */}
-      <ResponsiveContainer width="98%" height={200} className="mt-4">
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-          <XAxis dataKey="time" />
-          <YAxis
-            domain={[minWeight - 1, maxWeight + 1]}
-            tickFormatter={(v) => v.toFixed(2)}
-          />
-          <Tooltip />
-          <Legend />
-          <Line
-            dataKey="weight"
-            stroke="#fb8c00"
-            strokeWidth={2}
-            type="monotone"
-          />
-        </LineChart>
-      </ResponsiveContainer>
-
-      {/* Yield Line Chart */}
-      <ResponsiveContainer width="98%" height={200} className="mt-4">
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-          <XAxis dataKey="time" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Line
-            dataKey="yield"
-            stroke="#43a047"
-            strokeWidth={2}
-            type="monotone"
-          />
-        </LineChart>
-      </ResponsiveContainer>
-
-      {/* Temperature Line Chart */}
-      <ResponsiveContainer width="98%" height={200} className="mt-4">
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-          <XAxis dataKey="time" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Line
-            dataKey="temperature"
-            stroke="#e53935"
-            strokeWidth={2}
-            type="monotone"
-          />
-        </LineChart>
-      </ResponsiveContainer>
-
-      {/* Brood Line Chart with zoom domain */}
-      <ResponsiveContainer width="98%" height={200} className="mt-4">
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-          <XAxis dataKey="time" />
-          <YAxis domain={[minBrood - 1, maxBrood + 1]} />
-          <Tooltip />
-          <Legend />
-          <Line
-            dataKey="brood"
-            stroke="#e57373"
-            strokeWidth={2}
-            type="monotone"
-          />
-        </LineChart>
-      </ResponsiveContainer>
-
-      {/* Humidity Bar Chart */}
-      <ResponsiveContainer width="98%" height={200} className="mt-8">
-        <BarChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-          <XAxis dataKey="time" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey="humidity" fill="#1e88e5" />
-        </BarChart>
-      </ResponsiveContainer>
+      {["weight", "yield", "temperature", "brood", "humidity"].map((key) => (
+        <ResponsiveContainer
+          width="98%"
+          height={200}
+          className="mt-4"
+          key={key}
+        >
+          {key === "humidity" ? (
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
+              <XAxis dataKey="time" tickFormatter={formatDate} />
+              <YAxis />
+              <Tooltip labelFormatter={formatDate} />
+              <Legend />
+              <Bar dataKey={key} fill="#1e88e5" />
+            </BarChart>
+          ) : (
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
+              <XAxis dataKey="time" tickFormatter={formatDate} />
+              <YAxis
+                domain={
+                  key === "weight"
+                    ? [minWeight - 1, maxWeight + 1]
+                    : key === "brood"
+                    ? [minBrood - 1, maxBrood + 1]
+                    : undefined
+                }
+              />
+              <Tooltip labelFormatter={formatDate} />
+              <Legend />
+              <Line
+                dataKey={key}
+                stroke={
+                  key === "weight"
+                    ? "#fb8c00"
+                    : key === "yield"
+                    ? "#43a047"
+                    : key === "temperature"
+                    ? "#e53935"
+                    : "#e57373"
+                }
+                strokeWidth={2}
+                type="monotone"
+              />
+            </LineChart>
+          )}
+        </ResponsiveContainer>
+      ))}
     </div>
   );
 }
