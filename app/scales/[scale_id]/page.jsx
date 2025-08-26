@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+import { useEffect, useState } from "react";
 import {
   LineChart,
   Line,
@@ -12,13 +14,11 @@ import {
   BarChart,
   ResponsiveContainer,
 } from "recharts";
-
-import { useEffect, useState, use } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { forwardRef } from "react";
 
-// ✅ Custom Button for DatePicker
+// Custom DatePicker button
 const CustomInputButton = forwardRef(({ value, onClick }, ref) => (
   <button
     onClick={onClick}
@@ -30,132 +30,93 @@ const CustomInputButton = forwardRef(({ value, onClick }, ref) => (
 ));
 
 export default function ScaleDetailPage({ params }) {
+  const { scale_id } = React.use(params);
+
   const [scales, setScales] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const today = new Date();
-  const weekAgo = new Date();
-  weekAgo.setDate(today.getDate() - 7);
-  const { scale_id } = use(params);
+  const [chartData, setChartData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const [selectedResolution, setSelectedResolution] = useState("daily");
-  const [chartData, setChartData] = useState([]);
-  const [startDate, setStartDate] = useState(weekAgo);
-  const [endDate, setEndDate] = useState(today);
-  const [previewFetched, setPreviewFetched] = useState(false);
-  const [loadingFull, setLoadingFull] = useState(false);
+  const [startDate, setStartDate] = useState(
+    new Date(new Date().setDate(new Date().getDate() - 7))
+  );
+  const [endDate, setEndDate] = useState(new Date());
+  const [activeMetric, setActiveMetric] = useState("weight");
 
-  // ✅ Fetch list of available scales
-  const fetchScales = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/scales");
-      const data = await res.json();
-      setScales(data.scales || []);
-    } catch (err) {
-      console.error("❌ Error loading scales:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const lineMetrics = ["weight", "yield", "temperature", "brood"];
+  const barMetric = "humidity";
+  const metrics = [...lineMetrics, barMetric];
 
+  const [yDomain, setYDomain] = useState([0, 10]);
+
+  // Fetch scales
   useEffect(() => {
+    const fetchScales = async () => {
+      try {
+        const res = await fetch("/api/scales");
+        const data = await res.json();
+        setScales(data.scales || []);
+      } catch (err) {
+        console.error("❌ Error loading scales:", err);
+      }
+    };
     fetchScales();
   }, []);
 
-  // ✅ Fetch chart data
+  // Fetch chart data
   useEffect(() => {
-    let didCancel = false;
+    if (!activeMetric) return;
+    setLoading(true);
 
-    const fetchPreview = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch(
-          `/api/scale-data/${scale_id}/latest?resolution=${selectedResolution}&limit=20`
-        );
-        const json = await res.json();
-        if (!didCancel) {
-          const formatted = json.map((entry) => ({
-            ...entry,
-            time: entry.time,
-            weight: entry.weight ?? null,
-            yield: entry.yield ?? null,
-            temperature: entry.temperature ?? null,
-            brood: entry.brood ?? null,
-            humidity: entry.humidity ?? null,
-          }));
-          setChartData(formatted);
-          setPreviewFetched(true);
-        }
-      } catch (err) {
-        console.error("❌ Error fetching preview data:", err);
-      }
-    };
-
-    const fetchFull = async () => {
-      if (!startDate || !endDate || startDate > endDate) return;
-      const startISO = startDate.toISOString();
-      const endISO = endDate.toISOString();
-      setLoadingFull(true);
-
-      try {
+        const startISO = startDate.toISOString();
+        const endISO = endDate.toISOString();
         const res = await fetch(
           `/api/scale-data/${scale_id}?resolution=${selectedResolution}&start=${encodeURIComponent(
             startISO
           )}&end=${encodeURIComponent(endISO)}`
         );
         const json = await res.json();
-        if (!didCancel && Array.isArray(json) && json.length > 0) {
-          const formatted = json.map((entry) => ({
-            ...entry,
-            time: entry.time,
-            weight: entry.weight ?? null,
-            yield: entry.yield ?? null,
-            temperature: entry.temperature ?? null,
-            brood: entry.brood ?? null,
-            humidity: entry.humidity ?? null,
-          }));
-          setChartData(formatted);
+
+        const formatted = json.map((entry) => ({
+          ...entry,
+          time: entry.time,
+          weight: entry.weight ?? null,
+          yield: entry.yield ?? null,
+          temperature: entry.temperature ?? null,
+          brood: entry.brood ?? null,
+          humidity: entry.humidity ?? null,
+        }));
+        setChartData(formatted);
+
+        // Set Y-domain with padding for default zoom
+        const values = formatted
+          .map((e) => e[activeMetric])
+          .filter((v) => v !== null);
+        if (values.length) {
+          const min = Math.min(...values);
+          const max = Math.max(...values);
+          const padding = (max - min) * 0.1 || 1; // 10% padding or 1 if flat line
+          setYDomain([min - padding, max + padding]);
         }
       } catch (err) {
-        console.error("❌ Error fetching full scale data:", err);
+        console.error("❌ Error fetching data:", err);
       } finally {
-        setLoadingFull(false);
+        setLoading(false);
       }
     };
 
-    fetchPreview();
-    const delay = setTimeout(fetchFull, 1500);
+    fetchData();
+  }, [activeMetric, scale_id, selectedResolution, startDate, endDate]);
 
-    return () => {
-      didCancel = true;
-      clearTimeout(delay);
-    };
-  }, [scale_id, selectedResolution, startDate, endDate]);
+  const hasDataForKey = (key) =>
+    chartData.some((entry) => entry[key] !== null && entry[key] !== undefined);
 
-  // ✅ Helper: check if a chart has data
-  const hasDataForKey = (key) => {
-    return chartData.some(
-      (entry) => entry[key] !== null && entry[key] !== undefined
-    );
-  };
-
-  // ✅ Metrics
-  const lineMetrics = ["weight", "yield", "temperature", "brood"];
-  const barMetric = "humidity";
-
-  // ✅ Check if there is any data at all
-  const hasAnyData = [...lineMetrics, barMetric].some((key) =>
-    hasDataForKey(key)
+  const selectedScale = scales.find(
+    (s) => String(s.scale_id) === String(scale_id)
   );
 
-  // ✅ Min/Max for zooming weight and brood charts
-  const weightData = chartData.map((e) => e.weight).filter((v) => v !== null);
-  const broodData = chartData.map((e) => e.brood).filter((v) => v !== null);
-  const minWeight = weightData.length ? Math.min(...weightData) : 0;
-  const maxWeight = weightData.length ? Math.max(...weightData) : 0;
-  const minBrood = broodData.length ? Math.min(...broodData) : 0;
-  const maxBrood = broodData.length ? Math.max(...broodData) : 0;
-
-  // ✅ Format Finnish dates for charts
   const formatDate = (value) => {
     const date = new Date(value);
     return selectedResolution === "hourly"
@@ -172,48 +133,55 @@ export default function ScaleDetailPage({ params }) {
         });
   };
 
-  const selectedScale = scales.find(
-    (scale) => String(scale.scale_id) === String(scale_id)
-  );
+  const formatY = (value) => value?.toFixed(2);
+
+  const zoomInY = () => {
+    const [min, max] = yDomain;
+    const range = max - min;
+    setYDomain([min + range * 0.1, max - range * 0.1]);
+  };
+
+  const zoomOutY = () => {
+    const [min, max] = yDomain;
+    const range = max - min;
+    setYDomain([min - range * 0.1, max + range * 0.1]);
+  };
 
   return (
-    <div className="p-1 md:p-4 text-gray-500">
-      {/* Header */}
-      <h1 className="text-xl font-bold mb-2 ml-8">
+    <div className="p-4 text-gray-500">
+      <h1 className="text-xl font-bold mb-6">
         📊 {selectedScale?.name || `ID: ${scale_id}`}
       </h1>
 
-      {/* Resolution Toggle Buttons */}
-      <div className="flex md:flex-row mb-5 ml-4 gap-4 mt-8">
-        <button
-          onClick={() => setSelectedResolution("hourly")}
-          className={`px-2 py-2 md:py-1 rounded w-full text-gray-700 mr-2 ${
-            selectedResolution === "hourly"
-              ? "bg-blue-700 text-white"
-              : "bg-gray-200"
-          }`}
-        >
-          Hourly
-        </button>
-        <button
-          onClick={() => setSelectedResolution("daily")}
-          className={`px-2 py-2 md:py-1 md:mt-0 rounded w-full text-gray-700 ${
-            selectedResolution === "daily"
-              ? "bg-green-700 text-white"
-              : "bg-gray-200"
-          }`}
-        >
-          Daily
-        </button>
-      </div>
+      {/* Top row: resolution + date pickers */}
+      <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-4">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setSelectedResolution("hourly")}
+            className={`px-3 py-1 rounded ${
+              selectedResolution === "hourly"
+                ? "bg-blue-700 text-white"
+                : "bg-gray-200"
+            }`}
+          >
+            Hourly
+          </button>
+          <button
+            onClick={() => setSelectedResolution("daily")}
+            className={`px-3 py-1 rounded ${
+              selectedResolution === "daily"
+                ? "bg-green-700 text-white"
+                : "bg-gray-200"
+            }`}
+          >
+            Daily
+          </button>
+        </div>
 
-      {/* Date Range Picker */}
-      <div className="flex flex-col md:flex-row gap-2 mb-4 mx-4 md:mx-8">
-        <div>
-          <label className="inline-block font-medium px-2 mb-1">Start: </label>
+        <div className="flex gap-2">
           <DatePicker
             selected={startDate}
-            onChange={(date) => setStartDate(date)}
+            onChange={setStartDate}
             showTimeSelect={selectedResolution === "hourly"}
             dateFormat={
               selectedResolution === "hourly"
@@ -222,14 +190,9 @@ export default function ScaleDetailPage({ params }) {
             }
             customInput={<CustomInputButton />}
           />
-        </div>
-        <div>
-          <label className="inline-block font-medium px-2 mb-1 mr-2 md:mr-0">
-            End:
-          </label>
           <DatePicker
             selected={endDate}
-            onChange={(date) => setEndDate(date)}
+            onChange={setEndDate}
             showTimeSelect={selectedResolution === "hourly"}
             dateFormat={
               selectedResolution === "hourly"
@@ -241,62 +204,71 @@ export default function ScaleDetailPage({ params }) {
         </div>
       </div>
 
-      {/* Status Messages */}
-      {!previewFetched && (
-        <div className="text-center text-gray-500 my-4">
-          Loading preview data...
-        </div>
-      )}
-      {loadingFull && (
-        <div className="text-center text-blue-500 my-2">
-          Loading full data...
-        </div>
-      )}
-      {previewFetched && chartData.length > 0 && !loadingFull && (
-        <div className="text-center text-yellow-600 text-sm mb-4">
-          Showing preview data (latest 20 records). Full data will appear if
-          available.
-        </div>
-      )}
-
-      {/* ✅ Show message if absolutely no data */}
-      {!hasAnyData && !loadingFull && (
-        <div className="text-center text-red-500 text-lg mt-6">
-          ❌ No data available for this scale.
-        </div>
-      )}
-
-      {/* ✅ Line Charts */}
-      {lineMetrics.map((key) =>
-        hasDataForKey(key) ? (
-          <ResponsiveContainer
-            width="98%"
-            height={200}
-            className="mt-4"
-            key={key}
+      {/* Metric tabs */}
+      <div className="flex flex-wrap gap-2 justify-center mb-4">
+        {metrics.map((metric) => (
+          <button
+            key={metric}
+            onClick={() => setActiveMetric(metric)}
+            className={`px-3 py-1 rounded ${
+              activeMetric === metric
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
           >
+            {metric.charAt(0).toUpperCase() + metric.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Y-axis zoom buttons */}
+      <div className="flex gap-2 justify-center mb-2">
+        <button
+          className="px-3 py-1 text-gray-700 bg-gray-200 rounded hover:bg-gray-400"
+          onClick={zoomInY}
+        >
+          Zoom In Y
+        </button>
+        <button
+          className="px-3 py-1 text-gray-700 bg-gray-200 rounded hover:bg-gray-400"
+          onClick={zoomOutY}
+        >
+          Zoom Out Y
+        </button>
+      </div>
+
+      {/* Loading */}
+      {loading && (
+        <div className="text-center text-gray-500">Loading data...</div>
+      )}
+
+      {/* Chart */}
+      {!loading && hasDataForKey(activeMetric) && (
+        <ResponsiveContainer width="100%" height={400}>
+          {activeMetric === barMetric ? (
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
+              <XAxis dataKey="time" tickFormatter={formatDate} />
+              <YAxis domain={yDomain} tickFormatter={formatY} />
+              <Tooltip labelFormatter={formatDate} formatter={formatY} />
+              <Legend />
+              <Bar dataKey={barMetric} fill="#1e88e5" />
+            </BarChart>
+          ) : (
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
               <XAxis dataKey="time" tickFormatter={formatDate} />
-              <YAxis
-                domain={
-                  key === "weight"
-                    ? [minWeight - 1, maxWeight + 1]
-                    : key === "brood"
-                    ? [minBrood - 1, maxBrood + 1]
-                    : undefined
-                }
-              />
-              <Tooltip labelFormatter={formatDate} />
+              <YAxis domain={yDomain} tickFormatter={formatY} />
+              <Tooltip labelFormatter={formatDate} formatter={formatY} />
               <Legend />
               <Line
-                dataKey={key}
+                dataKey={activeMetric}
                 stroke={
-                  key === "weight"
+                  activeMetric === "weight"
                     ? "#fb8c00"
-                    : key === "yield"
+                    : activeMetric === "yield"
                     ? "#43a047"
-                    : key === "temperature"
+                    : activeMetric === "temperature"
                     ? "#e53935"
                     : "#e57373"
                 }
@@ -304,27 +276,15 @@ export default function ScaleDetailPage({ params }) {
                 type="monotone"
               />
             </LineChart>
-          </ResponsiveContainer>
-        ) : null
+          )}
+        </ResponsiveContainer>
       )}
 
-      {/* ✅ Humidity Bar Chart */}
-      {hasDataForKey(barMetric) && (
-        <ResponsiveContainer
-          width="98%"
-          height={200}
-          className="mt-4"
-          key={barMetric}
-        >
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-            <XAxis dataKey="time" tickFormatter={formatDate} />
-            <YAxis />
-            <Tooltip labelFormatter={formatDate} />
-            <Legend />
-            <Bar dataKey={barMetric} fill="#1e88e5" />
-          </BarChart>
-        </ResponsiveContainer>
+      {/* No data */}
+      {!loading && !hasDataForKey(activeMetric) && (
+        <div className="text-center text-red-500 mt-6">
+          ❌ No data available for {activeMetric}.
+        </div>
       )}
     </div>
   );
