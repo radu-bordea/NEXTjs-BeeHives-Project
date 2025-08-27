@@ -28,3 +28,12 @@ body {
   );
 }
 
+
+.react-datepicker-popper {
+  max-width: 120vw !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 9999 !important;
+  margin-top: 220px !important; /* Pushes popup lower */
+}
+

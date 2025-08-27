@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, forwardRef } from "react";
+import { use } from "react";
+import Link from "next/link";
 import {
   LineChart,
   Line,
@@ -16,7 +17,6 @@ import {
 } from "recharts";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { forwardRef } from "react";
 
 // Custom DatePicker button
 const CustomInputButton = forwardRef(({ value, onClick }, ref) => (
@@ -29,8 +29,10 @@ const CustomInputButton = forwardRef(({ value, onClick }, ref) => (
   </button>
 ));
 
-export default function ScaleDetailPage({ params }) {
-  const { scale_id } = React.use(params);
+export default function ScaleDetailPage({ params: rawParams }) {
+  // Unwrap params promise safely
+  const params = use(rawParams);
+  const { scale_id } = params;
 
   const [scales, setScales] = useState([]);
   const [chartData, setChartData] = useState([]);
@@ -48,6 +50,64 @@ export default function ScaleDetailPage({ params }) {
   const metrics = [...lineMetrics, barMetric];
 
   const [yDomain, setYDomain] = useState([0, 10]);
+
+  const metricColors = {
+    weight: "#fb8c00", // Orange
+    yield: "#43a047", // Green
+    temperature: "#e53935", // Red
+    brood: "#c274d6", // Purple
+    humidity: "#1e88e5", // Blue
+  };
+
+  const getMetricLabel = (metric) => {
+    switch (metric) {
+      case "weight":
+        return "Weight (kg)";
+      case "temperature":
+        return "Temperature (°C)";
+      case "yield":
+        return "Yield (%)";
+      case "humidity":
+        return "Humidity (%)";
+      case "brood":
+        return "Brood (count)";
+      default:
+        return metric;
+    }
+  };
+
+  const formatDate = (value) => {
+    const date = new Date(value);
+    return selectedResolution === "hourly"
+      ? date.toLocaleString("fi-FI", {
+          day: "2-digit",
+          month: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : date.toLocaleDateString("fi-FI", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+  };
+
+  const formatY = (value) => value?.toFixed(2);
+
+  const zoomInY = () => {
+    const [min, max] = yDomain;
+    const range = max - min;
+    setYDomain([min + range * 0.1, max - range * 0.1]);
+  };
+
+  const zoomOutY = () => {
+    const [min, max] = yDomain;
+    const range = max - min;
+    setYDomain([min - range * 0.1, max + range * 0.1]);
+  };
+
+  const hasDataForKey = (key) =>
+    chartData.some((entry) => entry[key] !== null && entry[key] !== undefined);
 
   // Fetch scales
   useEffect(() => {
@@ -90,14 +150,13 @@ export default function ScaleDetailPage({ params }) {
         }));
         setChartData(formatted);
 
-        // Set Y-domain with padding for default zoom
         const values = formatted
           .map((e) => e[activeMetric])
           .filter((v) => v !== null);
         if (values.length) {
           const min = Math.min(...values);
           const max = Math.max(...values);
-          const padding = (max - min) * 0.1 || 1; // 10% padding or 1 if flat line
+          const padding = (max - min) * 0.5 || 1;
           setYDomain([min - padding, max + padding]);
         }
       } catch (err) {
@@ -110,42 +169,9 @@ export default function ScaleDetailPage({ params }) {
     fetchData();
   }, [activeMetric, scale_id, selectedResolution, startDate, endDate]);
 
-  const hasDataForKey = (key) =>
-    chartData.some((entry) => entry[key] !== null && entry[key] !== undefined);
-
   const selectedScale = scales.find(
     (s) => String(s.scale_id) === String(scale_id)
   );
-
-  const formatDate = (value) => {
-    const date = new Date(value);
-    return selectedResolution === "hourly"
-      ? date.toLocaleString("fi-FI", {
-          day: "2-digit",
-          month: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : date.toLocaleDateString("fi-FI", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        });
-  };
-
-  const formatY = (value) => value?.toFixed(2);
-
-  const zoomInY = () => {
-    const [min, max] = yDomain;
-    const range = max - min;
-    setYDomain([min + range * 0.1, max - range * 0.1]);
-  };
-
-  const zoomOutY = () => {
-    const [min, max] = yDomain;
-    const range = max - min;
-    setYDomain([min - range * 0.1, max + range * 0.1]);
-  };
 
   return (
     <div className="p-2 dark:text-gray-400">
@@ -153,55 +179,17 @@ export default function ScaleDetailPage({ params }) {
         📊 {selectedScale?.name || `ID: ${scale_id}`}
       </h1>
 
-      {/* Top row: resolution + date pickers */}
-      <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-4">
-        <div className="flex gap-2">
-          <button
-            onClick={() => setSelectedResolution("hourly")}
-            className={`px-2 text-sm py-1 rounded ${
-              selectedResolution === "hourly"
-                ? "bg-blue-700 text-white"
-                : "bg-gray-200"
-            }`}
+      {/* Scales */}
+      <div className="flex flex-wrap gap-2 justify-center mb-4">
+        {scales.map((scale) => (
+          <Link
+            key={scale.scale_id}
+            href={`/scales/${scale.scale_id}`}
+            className="px-2 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-400"
           >
-            Hourly
-          </button>
-          <button
-            onClick={() => setSelectedResolution("daily")}
-            className={`px-2 text-sm py-1 rounded ${
-              selectedResolution === "daily"
-                ? "bg-green-700 text-white"
-                : "bg-gray-200"
-            }`}
-          >
-            Daily
-          </button>
-        </div>
-
-        <div className="flex text-sm gap-2">
-          <DatePicker
-            selected={startDate}
-            onChange={setStartDate}
-            showTimeSelect={selectedResolution === "hourly"}
-            dateFormat={
-              selectedResolution === "hourly"
-                ? "dd.MM.yyyy HH:mm"
-                : "dd.MM.yyyy"
-            }
-            customInput={<CustomInputButton />}
-          />
-          <DatePicker
-            selected={endDate}
-            onChange={setEndDate}
-            showTimeSelect={selectedResolution === "hourly"}
-            dateFormat={
-              selectedResolution === "hourly"
-                ? "dd.MM.yyyy HH:mm"
-                : "dd.MM.yyyy"
-            }
-            customInput={<CustomInputButton />}
-          />
-        </div>
+            {scale.name || `ID: ${scale.scale_id}`}
+          </Link>
+        ))}
       </div>
 
       {/* Metric tabs */}
@@ -221,20 +209,64 @@ export default function ScaleDetailPage({ params }) {
         ))}
       </div>
 
-      {/* Y-axis zoom buttons */}
+      {/* Date pickers */}
+      <div className="flex mb-4 justify-center gap-2 text-xs sm:text-base">
+        <DatePicker
+          selected={startDate}
+          onChange={setStartDate}
+          showTimeSelect={selectedResolution === "hourly"}
+          dateFormat={
+            selectedResolution === "hourly" ? "dd.MM.yyyy HH:mm" : "dd.MM.yyyy"
+          }
+          customInput={<CustomInputButton />}
+        />
+        <DatePicker
+          selected={endDate}
+          onChange={setEndDate}
+          showTimeSelect={selectedResolution === "hourly"}
+          dateFormat={
+            selectedResolution === "hourly" ? "dd.MM.yyyy HH:mm" : "dd.MM.yyyy"
+          }
+          customInput={<CustomInputButton />}
+        />
+      </div>
+
+      {/* Y-axis zoom & resolution buttons */}
       <div className="flex gap-2 justify-center mb-2">
         <button
-          className="px-2 text-sm py-1 text-gray-700 bg-gray-200 rounded hover:bg-gray-400"
+          className="w-8 px-2 text-sm py-1 text-gray-700 bg-gray-200 rounded hover:bg-gray-400"
           onClick={zoomInY}
         >
-          Zoom In Y
+          +
         </button>
         <button
-          className="px-2 text-sm py-1 text-gray-700 bg-gray-200 rounded hover:bg-gray-400"
+          className="w-8 px-2 text-sm py-1 text-gray-700 bg-gray-200 rounded hover:bg-gray-400"
           onClick={zoomOutY}
         >
-          Zoom Out Y
+          -
         </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setSelectedResolution("hourly")}
+            className={`px-2 text-sm py-1 rounded ${
+              selectedResolution === "hourly"
+                ? "bg-blue-700 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
+          >
+            Hourly
+          </button>
+          <button
+            onClick={() => setSelectedResolution("daily")}
+            className={`px-2 text-sm py-1 rounded ${
+              selectedResolution === "daily"
+                ? "bg-green-700 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
+          >
+            Daily
+          </button>
+        </div>
       </div>
 
       {/* Loading */}
@@ -250,28 +282,32 @@ export default function ScaleDetailPage({ params }) {
               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
               <XAxis dataKey="time" tickFormatter={formatDate} />
               <YAxis domain={yDomain} tickFormatter={formatY} />
-              <Tooltip labelFormatter={formatDate} formatter={formatY} />
-              <Legend />
-              <Bar dataKey={barMetric} fill="#1e88e5" />
+              <Tooltip
+                labelFormatter={formatDate}
+                formatter={(value, name) => [
+                  formatY(value),
+                  getMetricLabel(name),
+                ]}
+              />
+              <Legend formatter={(value) => getMetricLabel(value)} />
+              <Bar dataKey={barMetric} fill={metricColors[barMetric]} />
             </BarChart>
           ) : (
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
               <XAxis dataKey="time" tickFormatter={formatDate} />
               <YAxis domain={yDomain} tickFormatter={formatY} />
-              <Tooltip labelFormatter={formatDate} formatter={formatY} />
-              <Legend />
+              <Tooltip
+                labelFormatter={formatDate}
+                formatter={(value, name) => [
+                  formatY(value),
+                  getMetricLabel(name),
+                ]}
+              />
+              <Legend formatter={(value) => getMetricLabel(value)} />
               <Line
                 dataKey={activeMetric}
-                stroke={
-                  activeMetric === "weight"
-                    ? "#fb8c00"
-                    : activeMetric === "yield"
-                    ? "#43a047"
-                    : activeMetric === "temperature"
-                    ? "#e53935"
-                    : "#e57373"
-                }
+                stroke={metricColors[activeMetric] || "#e57373"}
                 strokeWidth={2}
                 type="monotone"
               />

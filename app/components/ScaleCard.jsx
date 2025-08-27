@@ -13,13 +13,13 @@ export default function ScaleCard({
   return (
     <motion.div
       key={scale.scale_id}
-      className="min-w-[280px] snap-start border rounded-2xl shadow p-4 hover:shadow-lg transition"
+      className="min-w-[280px] snap-start border rounded-2xl shadow p-4 hover:shadow-xl shadow-gray-400 transition"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1, duration: 0.5 }}
     >
-      <h2 className="text-xl font-semibold text-blue-600">
-        <span className="text-gray-500">Name: </span>
+      <h2 className="text-xl font-semibold text-gray-500">
+        <span className="text-gray-500 text-sm">Name: </span>
         {scale.name}
       </h2>
       <p className="text-sm text-gray-500">
