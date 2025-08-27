@@ -80,7 +80,7 @@ export default function Navbar() {
         <div className="md:hidden">
           <button
             onClick={toggleMobileMenu}
-            className="text-gray-500 focus:outline-none"
+            className="text-gray-400 focus:outline-none"
             aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? (
@@ -97,8 +97,8 @@ export default function Navbar() {
             <Link
               key={path}
               href={path}
-              className={`hover:text-blue-600 ${
-                isActive(path) ? "text-blue-600" : "text-gray-500"
+              className={`hover:text-blue-400 ${
+                isActive(path) ? "text-blue-400" : "text-gray-400"
               }`}
             >
               {label}
@@ -108,7 +108,7 @@ export default function Navbar() {
           {!session ? (
             <button
               onClick={() => signIn("google")}
-              className="text-gray-500 hover:text-blue-600"
+              className="text-gray-400 hover:text-blue-400"
             >
               Login
             </button>
@@ -126,7 +126,7 @@ export default function Navbar() {
                   />
                 )}
                 {session.user.name && (
-                  <span className="text-gray-600 text-sm">
+                  <span className="text-gray-400 text-sm">
                     {session.user.name}
                   </span>
                 )}
@@ -166,9 +166,9 @@ export default function Navbar() {
             <Link
               key={path}
               href={path}
-              className={`text-lg hover:text-blue-600 ${
+              className={`text-lg hover:text-blue-400 ${
                 isActive(path)
-                  ? "text-blue-600"
+                  ? "text-blue-400"
                   : "text-gray-800 dark:text-gray-300"
               }`}
               onClick={closeMenu}
@@ -183,7 +183,7 @@ export default function Navbar() {
                 signIn("google");
                 closeMenu();
               }}
-              className="text-lg text-gray-800 dark:text-gray-300 hover:text-blue-600 text-left"
+              className="text-lg text-gray-800 dark:text-gray-300 hover:text-blue-400 text-left"
             >
               Login
             </button>
@@ -197,7 +197,7 @@ export default function Navbar() {
                 />
               )}
               {session.user.name && (
-                <span className="text-gray-600 text-sm">
+                <span className="text-gray-400 text-sm">
                   {session.user.name}
                 </span>
               )}
@@ -206,7 +206,7 @@ export default function Navbar() {
                   signOut({ callbackUrl: "/" });
                   closeMenu();
                 }}
-                className="text-lg text-red-500 hover:text-red-600 text-left cursor-pointer"
+                className="text-lg text-red-400 hover:text-red-400 text-left cursor-pointer"
               >
                 Logout
               </button>
