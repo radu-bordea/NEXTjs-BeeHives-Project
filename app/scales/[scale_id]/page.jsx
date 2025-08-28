@@ -180,12 +180,12 @@ export default function ScaleDetailPage({ params: rawParams }) {
       </h1>
 
       {/* Scales */}
-      <div className="flex flex-wrap gap-2 justify-center mb-4">
+      <div className="flex flex-wrap gap-1 justify-center mb-4">
         {scales.map((scale) => (
           <Link
             key={scale.scale_id}
             href={`/scales/${scale.scale_id}`}
-            className="px-2 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-400"
+            className="px-1 py-1 text-xs rounded bg-gray-200 text-gray-700 hover:bg-gray-400"
           >
             {scale.name || `ID: ${scale.scale_id}`}
           </Link>
@@ -193,12 +193,12 @@ export default function ScaleDetailPage({ params: rawParams }) {
       </div>
 
       {/* Metric tabs */}
-      <div className="flex flex-wrap gap-2 justify-center mb-4">
+      <div className="flex flex-wrap gap-1 justify-center mb-4">
         {metrics.map((metric) => (
           <button
             key={metric}
             onClick={() => setActiveMetric(metric)}
-            className={`px-2 text-sm py-1 rounded ${
+            className={`px-2 py-1 text-xs rounded cursor-pointer ${
               activeMetric === metric
                 ? "bg-blue-600 text-white"
                 : "bg-gray-200 text-gray-700"
@@ -234,13 +234,13 @@ export default function ScaleDetailPage({ params: rawParams }) {
       {/* Y-axis zoom & resolution buttons */}
       <div className="flex gap-2 justify-center mb-2">
         <button
-          className="w-8 px-2 text-sm py-1 text-gray-700 bg-gray-200 rounded hover:bg-gray-400"
+          className="w-8 px-1 py-1 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-400 cursor-pointer"
           onClick={zoomInY}
         >
           +
         </button>
         <button
-          className="w-8 px-2 text-sm py-1 text-gray-700 bg-gray-200 rounded hover:bg-gray-400"
+          className="w-8 px-1 py-1 text-sm  text-gray-700 bg-gray-200 rounded hover:bg-gray-400 cursor-pointer"
           onClick={zoomOutY}
         >
           -
@@ -248,7 +248,7 @@ export default function ScaleDetailPage({ params: rawParams }) {
         <div className="flex gap-2">
           <button
             onClick={() => setSelectedResolution("hourly")}
-            className={`px-2 text-sm py-1 rounded ${
+            className={`px-2 text-sm py-1 rounded cursor-pointer ${
               selectedResolution === "hourly"
                 ? "bg-blue-700 text-white"
                 : "bg-gray-200 text-gray-700"
@@ -258,7 +258,7 @@ export default function ScaleDetailPage({ params: rawParams }) {
           </button>
           <button
             onClick={() => setSelectedResolution("daily")}
-            className={`px-2 text-sm py-1 rounded ${
+            className={`px-2 text-sm py-1 rounded cursor-pointer ${
               selectedResolution === "daily"
                 ? "bg-green-700 text-white"
                 : "bg-gray-200 text-gray-700"
