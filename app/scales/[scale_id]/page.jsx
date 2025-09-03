@@ -182,20 +182,49 @@ export default function ScaleDetailPage({ params: rawParams }) {
 
   return (
     <div className="p-2 dark:text-gray-400">
-      <h1 className="text-sm font-bold mb-2">
-        📊 {selectedScale?.name || `ID: ${scale_id}`}
-      </h1>
+      {/* scale name  */}
+
+      {/* Date pickers */}
+      <div className="flex flex-col md:flex-row justify-center items-center md:gap-2">
+        <h1 className="text-sm font-bold md:mb-2">
+          📊 {selectedScale?.name || `ID: ${scale_id}`}
+        </h1>
+
+        <div className="flex mb-4 mt-2 justify-center  gap-2 text-xs sm:text-sm">
+          <DatePicker
+            selected={startDate}
+            onChange={setStartDate}
+            showTimeSelect={selectedResolution === "hourly"}
+            dateFormat={
+              selectedResolution === "hourly"
+                ? "dd.MM.yyyy HH:mm"
+                : "dd.MM.yyyy"
+            }
+            customInput={<CustomInputButton />}
+          />
+          <DatePicker
+            selected={endDate}
+            onChange={setEndDate}
+            showTimeSelect={selectedResolution === "hourly"}
+            dateFormat={
+              selectedResolution === "hourly"
+                ? "dd.MM.yyyy HH:mm"
+                : "dd.MM.yyyy"
+            }
+            customInput={<CustomInputButton />}
+          />
+        </div>
+      </div>
 
       {/* Scales */}
-      <div className="w-full overflow-x-auto">
-        <div className="flex justify-center space-x-1 whitespace-nowrap p-2">
+      <div className="w-full overflow-x-auto touch-pan-x mb-3">
+        <div className="flex gap-1 w-max whitespace-nowrap px-2">
           {scales.map((scale) => (
             <Link
               key={scale.scale_id}
               href={`/scales/${scale.scale_id}`}
-              // ✅ use clicked scale 
-              onClick={() => setActiveScale(scale.name)} 
-              className={`px-2 py-1 text-xs rounded cursor-pointer ${
+              onClick={() => setActiveScale(scale.name)}
+              className={`shrink-0 px-3 py-1 text-xs sm:text-sm rounded cursor-pointer ${
                 activeScale === scale.name
                   ? "bg-blue-600 text-white"
                   : "bg-gray-200 text-gray-700"
@@ -208,13 +237,13 @@ export default function ScaleDetailPage({ params: rawParams }) {
       </div>
 
       {/* Metric tabs */}
-      <div className="w-full overflow-x-auto">
-        <div className="flex justify-center space-x-1 whitespace-nowrap p-2">
+      <div className="w-full overflow-x-auto touch-pan-x mb-3">
+        <div className="flex gap-1 w-max whitespace-nowrap px-2">
           {metrics.map((metric) => (
             <button
               key={metric}
               onClick={() => setActiveMetric(metric)}
-              className={`px-2 py-1 text-xs rounded cursor-pointer ${
+              className={`px-2 py-1 text-xs sm:text-sm rounded cursor-pointer ${
                 activeMetric === metric
                   ? "bg-blue-600 text-white"
                   : "bg-gray-200 text-gray-700"
@@ -226,28 +255,6 @@ export default function ScaleDetailPage({ params: rawParams }) {
         </div>
       </div>
 
-      {/* Date pickers */}
-      <div className="flex mb-4 mt-2 justify-center gap-2 text-xs sm:text-sm">
-        <DatePicker
-          selected={startDate}
-          onChange={setStartDate}
-          showTimeSelect={selectedResolution === "hourly"}
-          dateFormat={
-            selectedResolution === "hourly" ? "dd.MM.yyyy HH:mm" : "dd.MM.yyyy"
-          }
-          customInput={<CustomInputButton />}
-        />
-        <DatePicker
-          selected={endDate}
-          onChange={setEndDate}
-          showTimeSelect={selectedResolution === "hourly"}
-          dateFormat={
-            selectedResolution === "hourly" ? "dd.MM.yyyy HH:mm" : "dd.MM.yyyy"
-          }
-          customInput={<CustomInputButton />}
-        />
-      </div>
-
       {/* Loading */}
       {loading && (
         <div className="text-center text-gray-500">Loading data...</div>
@@ -255,44 +262,46 @@ export default function ScaleDetailPage({ params: rawParams }) {
 
       {/* Chart */}
       {!loading && hasDataForKey(activeMetric) && (
-        <ResponsiveContainer width="100%" height={500}>
-          {activeMetric === barMetric ? (
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-              <XAxis dataKey="time" tickFormatter={formatDate} />
-              <YAxis domain={yDomain} tickFormatter={formatY} />
-              <Tooltip
-                labelFormatter={formatDate}
-                formatter={(value, name) => [
-                  formatY(value),
-                  getMetricLabel(name),
-                ]}
-              />
-              <Legend formatter={(value) => getMetricLabel(value)} />
-              <Bar dataKey={barMetric} fill={metricColors[barMetric]} />
-            </BarChart>
-          ) : (
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-              <XAxis dataKey="time" tickFormatter={formatDate} />
-              <YAxis domain={yDomain} tickFormatter={formatY} />
-              <Tooltip
-                labelFormatter={formatDate}
-                formatter={(value, name) => [
-                  formatY(value),
-                  getMetricLabel(name),
-                ]}
-              />
-              <Legend formatter={(value) => getMetricLabel(value)} />
-              <Line
-                dataKey={activeMetric}
-                stroke={metricColors[activeMetric] || "#e57373"}
-                strokeWidth={2}
-                type="monotone"
-              />
-            </LineChart>
-          )}
-        </ResponsiveContainer>
+        <div className="w-full h-[400px] md:h-[550px]">
+          <ResponsiveContainer width="100%" height="100%">
+            {activeMetric === barMetric ? (
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
+                <XAxis dataKey="time" tickFormatter={formatDate} />
+                <YAxis domain={yDomain} tickFormatter={formatY} />
+                <Tooltip
+                  labelFormatter={formatDate}
+                  formatter={(value, name) => [
+                    formatY(value),
+                    getMetricLabel(name),
+                  ]}
+                />
+                <Legend formatter={(value) => getMetricLabel(value)} />
+                <Bar dataKey={barMetric} fill={metricColors[barMetric]} />
+              </BarChart>
+            ) : (
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
+                <XAxis dataKey="time" tickFormatter={formatDate} />
+                <YAxis domain={yDomain} tickFormatter={formatY} />
+                <Tooltip
+                  labelFormatter={formatDate}
+                  formatter={(value, name) => [
+                    formatY(value),
+                    getMetricLabel(name),
+                  ]}
+                />
+                <Legend formatter={(value) => getMetricLabel(value)} />
+                <Line
+                  dataKey={activeMetric}
+                  stroke={metricColors[activeMetric] || "#e57373"}
+                  strokeWidth={2}
+                  type="monotone"
+                />
+              </LineChart>
+            )}
+          </ResponsiveContainer>
+        </div>
       )}
 
       {/* Y-axis zoom & resolution buttons */}
