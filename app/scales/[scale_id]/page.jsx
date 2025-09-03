@@ -43,11 +43,13 @@ export default function ScaleDetailPage({ params: rawParams }) {
     new Date(new Date().setDate(new Date().getDate() - 7))
   );
   const [endDate, setEndDate] = useState(new Date());
-  const [activeMetric, setActiveMetric] = useState("weight");
 
   const lineMetrics = ["weight", "yield", "temperature", "brood"];
   const barMetric = "humidity";
   const metrics = [...lineMetrics, barMetric];
+
+  const [activeMetric, setActiveMetric] = useState("weight");
+  const [activeScale, setActiveScale] = useState("TJUDÖ"); // initial fallback
 
   const [yDomain, setYDomain] = useState([0, 10]);
 
@@ -173,44 +175,59 @@ export default function ScaleDetailPage({ params: rawParams }) {
     (s) => String(s.scale_id) === String(scale_id)
   );
 
+  // 🔧 keep activeScale in sync with the selected route-derived scale
+  useEffect(() => {
+    if (selectedScale?.name) setActiveScale(selectedScale.name);
+  }, [selectedScale?.name]);
+
   return (
     <div className="p-2 dark:text-gray-400">
-      <h1 className="text-sm font-bold mb-6">
+      <h1 className="text-sm font-bold mb-2">
         📊 {selectedScale?.name || `ID: ${scale_id}`}
       </h1>
 
       {/* Scales */}
-      <div className="flex flex-wrap gap-1 justify-center mb-4">
-        {scales.map((scale) => (
-          <Link
-            key={scale.scale_id}
-            href={`/scales/${scale.scale_id}`}
-            className="px-1 py-1 text-xs rounded bg-gray-200 text-gray-700 hover:bg-gray-400"
-          >
-            {scale.name || `ID: ${scale.scale_id}`}
-          </Link>
-        ))}
+      <div className="w-full overflow-x-auto">
+        <div className="flex justify-center space-x-1 whitespace-nowrap p-2">
+          {scales.map((scale) => (
+            <Link
+              key={scale.scale_id}
+              href={`/scales/${scale.scale_id}`}
+              // ✅ use clicked scale 
+              onClick={() => setActiveScale(scale.name)} 
+              className={`px-2 py-1 text-xs rounded cursor-pointer ${
+                activeScale === scale.name
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
+            >
+              {scale.name || `ID: ${scale.scale_id}`}
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Metric tabs */}
-      <div className="flex flex-wrap gap-1 justify-center mb-4">
-        {metrics.map((metric) => (
-          <button
-            key={metric}
-            onClick={() => setActiveMetric(metric)}
-            className={`px-2 py-1 text-xs rounded cursor-pointer ${
-              activeMetric === metric
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 text-gray-700"
-            }`}
-          >
-            {metric.charAt(0).toUpperCase() + metric.slice(1)}
-          </button>
-        ))}
+      <div className="w-full overflow-x-auto">
+        <div className="flex justify-center space-x-1 whitespace-nowrap p-2">
+          {metrics.map((metric) => (
+            <button
+              key={metric}
+              onClick={() => setActiveMetric(metric)}
+              className={`px-2 py-1 text-xs rounded cursor-pointer ${
+                activeMetric === metric
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
+            >
+              {metric.charAt(0).toUpperCase() + metric.slice(1)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Date pickers */}
-      <div className="flex mb-4 justify-center gap-2 text-xs sm:text-base">
+      <div className="flex mb-4 mt-2 justify-center gap-2 text-xs sm:text-sm">
         <DatePicker
           selected={startDate}
           onChange={setStartDate}
@@ -231,44 +248,6 @@ export default function ScaleDetailPage({ params: rawParams }) {
         />
       </div>
 
-      {/* Y-axis zoom & resolution buttons */}
-      <div className="flex gap-2 justify-center mb-2">
-        <button
-          className="w-8 px-1 py-1 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-400 cursor-pointer"
-          onClick={zoomInY}
-        >
-          +
-        </button>
-        <button
-          className="w-8 px-1 py-1 text-sm  text-gray-700 bg-gray-200 rounded hover:bg-gray-400 cursor-pointer"
-          onClick={zoomOutY}
-        >
-          -
-        </button>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setSelectedResolution("hourly")}
-            className={`px-2 text-sm py-1 rounded cursor-pointer ${
-              selectedResolution === "hourly"
-                ? "bg-blue-700 text-white"
-                : "bg-gray-200 text-gray-700"
-            }`}
-          >
-            Hourly
-          </button>
-          <button
-            onClick={() => setSelectedResolution("daily")}
-            className={`px-2 text-sm py-1 rounded cursor-pointer ${
-              selectedResolution === "daily"
-                ? "bg-green-700 text-white"
-                : "bg-gray-200 text-gray-700"
-            }`}
-          >
-            Daily
-          </button>
-        </div>
-      </div>
-
       {/* Loading */}
       {loading && (
         <div className="text-center text-gray-500">Loading data...</div>
@@ -276,7 +255,7 @@ export default function ScaleDetailPage({ params: rawParams }) {
 
       {/* Chart */}
       {!loading && hasDataForKey(activeMetric) && (
-        <ResponsiveContainer width="100%" height={400}>
+        <ResponsiveContainer width="100%" height={500}>
           {activeMetric === barMetric ? (
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
@@ -315,6 +294,44 @@ export default function ScaleDetailPage({ params: rawParams }) {
           )}
         </ResponsiveContainer>
       )}
+
+      {/* Y-axis zoom & resolution buttons */}
+      <div className="flex gap-2 justify-center mb-2">
+        <button
+          className="w-8 px-1 py-1 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-400 cursor-pointer"
+          onClick={zoomInY}
+        >
+          +
+        </button>
+        <button
+          className="w-8 px-1 py-1 text-sm  text-gray-700 bg-gray-200 rounded hover:bg-gray-400 cursor-pointer"
+          onClick={zoomOutY}
+        >
+          -
+        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setSelectedResolution("hourly")}
+            className={`px-2 text-sm py-1 rounded cursor-pointer ${
+              selectedResolution === "hourly"
+                ? "bg-blue-700 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
+          >
+            Hourly
+          </button>
+          <button
+            onClick={() => setSelectedResolution("daily")}
+            className={`px-2 text-sm py-1 rounded cursor-pointer ${
+              selectedResolution === "daily"
+                ? "bg-green-700 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
+          >
+            Daily
+          </button>
+        </div>
+      </div>
 
       {/* No data */}
       {!loading && !hasDataForKey(activeMetric) && (
