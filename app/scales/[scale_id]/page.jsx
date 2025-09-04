@@ -266,9 +266,9 @@ export default function ScaleDetailPage({ params: rawParams }) {
   }, [selectedScale?.name]);
 
   return (
-    <div className="p-2 dark:text-gray-400 border-2">
+    <div className="p-2 dark:text-gray-400">
       {/* Header + Date pickers ,+ quick rang + scales + metric + chart + zoom */}
-      <div className="flex flex-col md:flex-row justify-center items-center md:gap-2 border-1">
+      <div className="flex flex-col md:flex-row justify-center items-center md:gap-2 mb-4 shadow-lg shadow-amber-200 rounded-lg">
         <h1 className="text-sm font-bold mb-2">
           📊 {selectedScale?.name || `ID: ${scale_id}`}
         </h1>
@@ -319,7 +319,7 @@ export default function ScaleDetailPage({ params: rawParams }) {
         </div>
 
         {/* Date pickers  */}
-        <div className="flex mb-4 mt-2 justify-center gap-2 text-xs sm:text-sm border-1">
+        <div className="flex mb-4 mt-2 justify-center gap-2 text-xs sm:text-sm ">
           <DatePicker
             selected={startDate}
             onChange={(d) => setStartDate(d)}
@@ -349,7 +349,7 @@ export default function ScaleDetailPage({ params: rawParams }) {
       </div>
 
       {/* Scales */}
-      <div className="w-full overflow-x-auto touch-pan-x mb-3 border-1">
+      <div className="w-full overflow-x-auto touch-pan-x mb-3">
         <div className="flex gap-1 w-max whitespace-nowrap px-2">
           {scales.map((scale) => (
             <Link
@@ -369,7 +369,7 @@ export default function ScaleDetailPage({ params: rawParams }) {
       </div>
 
       {/* Metric tabs */}
-      <div className="w-full overflow-x-auto touch-pan-x mb-3 border-1">
+      <div className="w-full overflow-x-auto touch-pan-x mb-3">
         <div className="flex gap-1 w-max whitespace-nowrap px-2">
           {metrics.map((metric) => (
             <button

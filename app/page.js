@@ -1,7 +1,7 @@
 const HomePage = () => {
   return (
     <div className="h-screen flex items-start justify-center p-8 dark:text-gray-500">
-      <div className="md:w-1/2 p-2 md:p-6 md:shadow-2xl shadow-blue-700">
+      <div className="md:w-1/2 p-2 md:p-6 shadow-lg shadow-amber-200 rounded-lg">
         <h1 className="text-2xl md:text-3xl font-bold mb-4">
           About the Beehive Data Project
         </h1>
