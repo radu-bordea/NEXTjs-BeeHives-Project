@@ -268,7 +268,7 @@ export default function ScaleDetailPage({ params: rawParams }) {
   return (
     <div className="p-2 dark:text-gray-400">
       {/* Header + Date pickers ,+ quick rang + scales + metric + chart + zoom */}
-      <div className="flex flex-col md:flex-row justify-center items-center md:gap-2 mb-4 shadow-lg shadow-amber-200 rounded-lg">
+      <div className="flex flex-col md:flex-row justify-center items-center md:gap-2 mb-4 shadow-md shadow-amber-200 rounded-lg">
         <h1 className="text-sm font-bold mb-2">
           📊 {selectedScale?.name || `ID: ${scale_id}`}
         </h1>
