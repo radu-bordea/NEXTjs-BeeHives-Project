@@ -19,18 +19,23 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 // Custom DatePicker button
-const CustomInputButton = forwardRef(({ value, onClick }, ref) => (
-  <button
-    onClick={onClick}
-    ref={ref}
-    className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl shadow transition"
-  >
-    📅 <span>{value || "Valitse päivä"}</span>
-  </button>
-));
+const CustomInputButton = forwardRef(function CustomInputButton(
+  { value, onClick },
+  ref
+) {
+  return (
+    <button
+      onClick={onClick}
+      ref={ref}
+      className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl shadow transition"
+    >
+      📅 <span>{value || "Valitse päivä"} </span>
+    </button>
+  );
+});
 
 export default function ScaleDetailPage({ params: rawParams }) {
-  // Unwrap params promise safely
+  // Unwrap params promise safely (Next.js Route Handlers)
   const params = use(rawParams);
   const { scale_id } = params;
 
@@ -39,10 +44,76 @@ export default function ScaleDetailPage({ params: rawParams }) {
   const [loading, setLoading] = useState(false);
 
   const [selectedResolution, setSelectedResolution] = useState("daily");
-  const [startDate, setStartDate] = useState(
-    new Date(new Date().setDate(new Date().getDate() - 7))
-  );
-  const [endDate, setEndDate] = useState(new Date());
+
+  // ---- timeframe & dates ----
+  // NOTE: `timeframe` is the *displayed* number of days. It now auto-syncs with any date change.
+  const [timeframe, setTimeframe] = useState(7); // days
+
+  // Small date helpers kept as-is
+  const now = () => new Date();
+  const addDays = (date, n) => {
+    const d = new Date(date);
+    d.setDate(d.getDate() + n);
+    return d;
+  };
+
+  // Initial window: last `timeframe` days ending now
+  const [startDate, setStartDate] = useState(addDays(now(), -timeframe));
+  const [endDate, setEndDate] = useState(now());
+
+  /**
+   * 🧠 DEV NOTE — Best Option:
+   * Keep `timeframe` in sync with any date change (manual pickers, quick buttons, shifting).
+   * We use an inclusive diff (partial days count as 1). This prevents stale labels like "7" or "30"
+   * when users choose a custom range.
+   */
+  const diffDaysInclusive = (start, end) => {
+    const msPerDay = 1000 * 60 * 60 * 24;
+    // Use ceil so partial days count; clamp to min 1 day.
+    return Math.max(1, Math.ceil((end - start) / msPerDay));
+  };
+
+  // Current span derived from dates (used for shift buttons and "Today")
+  const currentSpanDays = diffDaysInclusive(startDate, endDate);
+
+  // Auto-sync timeframe whenever start or end changes (covers all entry points)
+  useEffect(() => {
+    setTimeframe(diffDaysInclusive(startDate, endDate));
+  }, [startDate, endDate]);
+
+  // Set last N days and keep end at "now"
+  const setQuickRange = (days) => {
+    const n = now();
+    setStartDate(addDays(n, -days));
+    setEndDate(n);
+    // No need to manually setTimeframe here; the effect above will sync it
+  };
+
+  // Slide window by current span
+  const shiftWindow = (days) => {
+    const n = now();
+    let newStart = addDays(startDate, days);
+    let newEnd = addDays(endDate, days);
+
+    // Don't allow future
+    if (newEnd > n) {
+      const overshoot = newEnd - n;
+      newEnd = n;
+      newStart = new Date(newStart - overshoot);
+    }
+    if (newStart >= newEnd) newStart = addDays(newEnd, -1);
+
+    setStartDate(newStart);
+    setEndDate(newEnd);
+    // timeframe auto-updates via useEffect
+  };
+
+  const goToday = () => {
+    const n = now();
+    setStartDate(addDays(n, -currentSpanDays));
+    setEndDate(n);
+    // timeframe auto-updates via useEffect
+  };
 
   const lineMetrics = ["weight", "yield", "temperature", "brood"];
   const barMetric = "humidity";
@@ -94,7 +165,8 @@ export default function ScaleDetailPage({ params: rawParams }) {
         });
   };
 
-  const formatY = (value) => value?.toFixed(2);
+  const formatY = (value) =>
+    typeof value === "number" ? value.toFixed(2) : value;
 
   const zoomInY = () => {
     const [min, max] = yDomain;
@@ -108,10 +180,22 @@ export default function ScaleDetailPage({ params: rawParams }) {
     setYDomain([min - range * 0.1, max + range * 0.1]);
   };
 
+  const resetY = () => {
+    const values = chartData
+      .map((e) => e[activeMetric])
+      .filter((v) => v !== null && v !== undefined);
+    if (values.length) {
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const padding = (max - min) * 0.5 || 1;
+      setYDomain([min - padding, max + padding]);
+    }
+  };
+
   const hasDataForKey = (key) =>
     chartData.some((entry) => entry[key] !== null && entry[key] !== undefined);
 
-  // Fetch scales
+  // Fetch scales (unchanged)
   useEffect(() => {
     const fetchScales = async () => {
       try {
@@ -125,7 +209,7 @@ export default function ScaleDetailPage({ params: rawParams }) {
     fetchScales();
   }, []);
 
-  // Fetch chart data
+  // Fetch chart data whenever controls change (unchanged except comments)
   useEffect(() => {
     if (!activeMetric) return;
     setLoading(true);
@@ -152,9 +236,10 @@ export default function ScaleDetailPage({ params: rawParams }) {
         }));
         setChartData(formatted);
 
+        // Auto-fit Y domain to the selected metric
         const values = formatted
           .map((e) => e[activeMetric])
-          .filter((v) => v !== null);
+          .filter((v) => v !== null && v !== undefined);
         if (values.length) {
           const min = Math.min(...values);
           const max = Math.max(...values);
@@ -175,25 +260,69 @@ export default function ScaleDetailPage({ params: rawParams }) {
     (s) => String(s.scale_id) === String(scale_id)
   );
 
-  // 🔧 keep activeScale in sync with the selected route-derived scale
+  // keep activeScale in sync with the selected route-derived scale
   useEffect(() => {
     if (selectedScale?.name) setActiveScale(selectedScale.name);
   }, [selectedScale?.name]);
 
   return (
-    <div className="p-2 dark:text-gray-400">
-      {/* scale name  */}
-
-      {/* Date pickers */}
-      <div className="flex flex-col md:flex-row justify-center items-center md:gap-2">
-        <h1 className="text-sm font-bold md:mb-2">
+    <div className="p-2 dark:text-gray-400 border-2">
+      {/* Header + Date pickers ,+ quick rang + scales + metric + chart + zoom */}
+      <div className="flex flex-col md:flex-row justify-center items-center md:gap-2 border-1">
+        <h1 className="text-sm font-bold mb-2">
           📊 {selectedScale?.name || `ID: ${scale_id}`}
         </h1>
 
-        <div className="flex mb-4 mt-2 justify-center  gap-2 text-xs sm:text-sm">
+        {/* Quick range & window controls */}
+        <div className="flex flex-wrap items-center justify-center gap-2  mb-2 md:ml-3">
+          <button
+            onClick={() => setQuickRange(7)}
+            className="px-3 py-1 text-xs sm:text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+          >
+            Last 7 days
+          </button>
+          <button
+            onClick={() => setQuickRange(30)}
+            className="px-3 py-1 text-xs sm:text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+          >
+            Last 30 days
+          </button>
+          <button
+            onClick={goToday}
+            className="px-3 py-1 text-xs sm:text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+            title="Keep same span, end at today"
+          >
+            Today
+          </button>
+
+          <div className="mx-2 h-5 w-px bg-gray-300" />
+
+          <button
+            onClick={() => shiftWindow(-currentSpanDays)}
+            className="px-2 py-1 text-xs sm:text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
+            title="Shift window backward by current span"
+          >
+            ← Prev {currentSpanDays}d
+          </button>
+          <button
+            onClick={() => shiftWindow(currentSpanDays)}
+            className="px-2 py-1 text-xs sm:text-sm rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+            title="Shift window forward by current span"
+            disabled={addDays(endDate, currentSpanDays) > now()}
+          >
+            Next {currentSpanDays}d →
+          </button>
+          {/* 👇 Label remains identical in UI, but now always accurate */}
+          <span className="text-xs text-gray-500 ml-2">
+            (showing {timeframe} days)
+          </span>
+        </div>
+
+        {/* Date pickers  */}
+        <div className="flex mb-4 mt-2 justify-center gap-2 text-xs sm:text-sm border-1">
           <DatePicker
             selected={startDate}
-            onChange={setStartDate}
+            onChange={(d) => setStartDate(d)}
             showTimeSelect={selectedResolution === "hourly"}
             dateFormat={
               selectedResolution === "hourly"
@@ -201,10 +330,11 @@ export default function ScaleDetailPage({ params: rawParams }) {
                 : "dd.MM.yyyy"
             }
             customInput={<CustomInputButton />}
+            maxDate={endDate}
           />
           <DatePicker
             selected={endDate}
-            onChange={setEndDate}
+            onChange={(d) => setEndDate(d)}
             showTimeSelect={selectedResolution === "hourly"}
             dateFormat={
               selectedResolution === "hourly"
@@ -212,12 +342,14 @@ export default function ScaleDetailPage({ params: rawParams }) {
                 : "dd.MM.yyyy"
             }
             customInput={<CustomInputButton />}
+            minDate={startDate}
+            maxDate={now()}
           />
         </div>
       </div>
 
       {/* Scales */}
-      <div className="w-full overflow-x-auto touch-pan-x mb-3">
+      <div className="w-full overflow-x-auto touch-pan-x mb-3 border-1">
         <div className="flex gap-1 w-max whitespace-nowrap px-2">
           {scales.map((scale) => (
             <Link
@@ -237,7 +369,7 @@ export default function ScaleDetailPage({ params: rawParams }) {
       </div>
 
       {/* Metric tabs */}
-      <div className="w-full overflow-x-auto touch-pan-x mb-3">
+      <div className="w-full overflow-x-auto touch-pan-x mb-3 border-1">
         <div className="flex gap-1 w-max whitespace-nowrap px-2">
           {metrics.map((metric) => (
             <button
@@ -262,7 +394,7 @@ export default function ScaleDetailPage({ params: rawParams }) {
 
       {/* Chart */}
       {!loading && hasDataForKey(activeMetric) && (
-        <div className="w-full h-[400px] md:h-[550px]">
+        <div className="w-full h-[350px] md:h-[550px]">
           <ResponsiveContainer width="100%" height="100%">
             {activeMetric === barMetric ? (
               <BarChart data={chartData}>
@@ -305,41 +437,51 @@ export default function ScaleDetailPage({ params: rawParams }) {
       )}
 
       {/* Y-axis zoom & resolution buttons */}
-      <div className="flex gap-2 justify-center mb-2">
+      <div className="flex flex-wrap gap-2 justify-center mb-2">
         <button
           className="w-8 px-1 py-1 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-400 cursor-pointer"
           onClick={zoomInY}
+          title="Zoom in Y"
         >
           +
         </button>
         <button
-          className="w-8 px-1 py-1 text-sm  text-gray-700 bg-gray-200 rounded hover:bg-gray-400 cursor-pointer"
+          className="w-8 px-1 py-1 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-400 cursor-pointer"
           onClick={zoomOutY}
+          title="Zoom out Y"
         >
           -
         </button>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setSelectedResolution("hourly")}
-            className={`px-2 text-sm py-1 rounded cursor-pointer ${
-              selectedResolution === "hourly"
-                ? "bg-blue-700 text-white"
-                : "bg-gray-200 text-gray-700"
-            }`}
-          >
-            Hourly
-          </button>
-          <button
-            onClick={() => setSelectedResolution("daily")}
-            className={`px-2 text-sm py-1 rounded cursor-pointer ${
-              selectedResolution === "daily"
-                ? "bg-green-700 text-white"
-                : "bg-gray-200 text-gray-700"
-            }`}
-          >
-            Daily
-          </button>
-        </div>
+        <button
+          className="px-2 text-sm py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-400"
+          onClick={resetY}
+          title="Auto fit Y to data"
+        >
+          Reset Y
+        </button>
+
+        <div className="mx-2 h-5 w-px bg-gray-300" />
+
+        <button
+          onClick={() => setSelectedResolution("hourly")}
+          className={`px-2 text-sm py-1 rounded cursor-pointer ${
+            selectedResolution === "hourly"
+              ? "bg-blue-700 text-white"
+              : "bg-gray-200 text-gray-700"
+          }`}
+        >
+          Hourly
+        </button>
+        <button
+          onClick={() => setSelectedResolution("daily")}
+          className={`px-2 text-sm py-1 rounded cursor-pointer ${
+            selectedResolution === "daily"
+              ? "bg-green-700 text-white"
+              : "bg-gray-200 text-gray-700"
+          }`}
+        >
+          Daily
+        </button>
       </div>
 
       {/* No data */}
