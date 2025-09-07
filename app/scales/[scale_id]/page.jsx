@@ -463,16 +463,6 @@ export default function ScaleDetailPage({ params: rawParams }) {
         <div className="mx-2 h-5 w-px bg-gray-300" />
 
         <button
-          onClick={() => setSelectedResolution("hourly")}
-          className={`px-2 text-sm py-1 rounded cursor-pointer ${
-            selectedResolution === "hourly"
-              ? "bg-blue-700 text-white"
-              : "bg-gray-200 text-gray-700"
-          }`}
-        >
-          Hourly
-        </button>
-        <button
           onClick={() => setSelectedResolution("daily")}
           className={`px-2 text-sm py-1 rounded cursor-pointer ${
             selectedResolution === "daily"
@@ -481,6 +471,16 @@ export default function ScaleDetailPage({ params: rawParams }) {
           }`}
         >
           Daily
+        </button>
+        <button
+          onClick={() => setSelectedResolution("hourly")}
+          className={`px-2 text-sm py-1 rounded cursor-pointer ${
+            selectedResolution === "hourly"
+              ? "bg-blue-700 text-white"
+              : "bg-gray-200 text-gray-700"
+          }`}
+        >
+          Hourly
         </button>
       </div>
 

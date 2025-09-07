@@ -30,14 +30,28 @@ export default function ScalesPage() {
   const fullData =
     selectedResolution === "hourly" ? scaleDataHourly : scaleDataDaily;
 
-  // Paginate the fullData array (no sorting applied here)
-  const paginatedData = fullData?.slice(
+  // ✅ NEW: sort the entire dataset (latest first) WITHOUT mutating original
+  const sortedFullData = Array.isArray(fullData)
+    ? [...fullData].sort((a, b) => {
+        const at = new Date(a?.time).getTime();
+        const bt = new Date(b?.time).getTime();
+        if (Number.isNaN(at) && Number.isNaN(bt)) return 0;
+        if (Number.isNaN(at)) return 1; // invalid/missing dates go last
+        if (Number.isNaN(bt)) return -1;
+        return bt - at; // latest first
+      })
+    : null;
+
+  // ✅ Paginate AFTER sorting
+  const paginatedData = sortedFullData?.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
 
-  // Total pages for pagination
-  const totalPages = fullData ? Math.ceil(fullData.length / rowsPerPage) : 0;
+  // ✅ Total pages from sorted data length
+  const totalPages = sortedFullData
+    ? Math.ceil(sortedFullData.length / rowsPerPage)
+    : 0;
 
   // --- Arrow key pagination (← and →) ---
   const handleKeyDown = useCallback(
@@ -129,7 +143,7 @@ export default function ScalesPage() {
   };
 
   // Load scale data for hourly/daily
-  const fetchScaleData = async (scaleId, resolution = "hourly") => {
+  const fetchScaleData = async (scaleId, resolution = "daily") => {
     setSelectedResolution(resolution);
     setScaleDataHourly(null);
     setScaleDataDaily(null);
@@ -249,9 +263,6 @@ export default function ScalesPage() {
       {/* Table with paginated data */}
       {paginatedData && (
         <>
-          {/* Top pagination */}
-          {/* {renderPagination()} */}
-
           <Table
             data={paginatedData}
             selectedResolution={selectedResolution}
@@ -260,8 +271,6 @@ export default function ScalesPage() {
             }
             scaleName={selectedScale?.name || selectedScale?.scale_id}
           />
-
-          {/* Bottom pagination */}
           {renderPagination()}
         </>
       )}

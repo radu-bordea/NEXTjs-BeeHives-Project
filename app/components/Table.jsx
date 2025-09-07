@@ -6,8 +6,6 @@ export default function Table({
   onResolutionChange,
   scaleName, // new prop
 }) {
-  const sortedData = data?.sort((a, b) => new Date(b.time) - new Date(a.time));
-
   return (
     <div className="mt-8">
       <h3 className="text-xl font-semibold mb-4">
@@ -16,24 +14,24 @@ export default function Table({
 
       <div className="flex mb-4">
         <button
-          onClick={() => onResolutionChange("hourly")}
-          className={`px-4 py-2 rounded text-gray-500 mr-2 ${
-            selectedResolution === "hourly"
-              ? "bg-blue-500 text-white"
-              : "bg-gray-200"
-          }`}
-        >
-          Hourly Data
-        </button>
-        <button
           onClick={() => onResolutionChange("daily")}
-          className={`px-4 py-2 rounded text-gray-500 ${
+          className={`px-4 py-2 rounded text-gray-500 mr-2 ${
             selectedResolution === "daily"
               ? "bg-green-500 text-white"
               : "bg-gray-200"
           }`}
         >
           Daily Data
+        </button>
+        <button
+          onClick={() => onResolutionChange("hourly")}
+          className={`px-4 py-2 rounded text-gray-500 ${
+            selectedResolution === "hourly"
+              ? "bg-blue-500 text-white"
+              : "bg-gray-200"
+          }`}
+        >
+          Hourly Data
         </button>
       </div>
 
@@ -50,8 +48,8 @@ export default function Table({
             </tr>
           </thead>
           <tbody>
-            {sortedData?.map((item, index) => (
-              <tr key={index}>
+            {data?.map((item, index) => (
+              <tr key={item.id ?? item.time ?? index}>
                 <td className="border px-4 py-2">
                   {item.time ? new Date(item.time).toLocaleString() : "N/A"}
                 </td>
