@@ -229,8 +229,8 @@ export default function ScalesPage() {
       {syncing && <Spinner />}
       <h1 className="text-2xl font-bold mb-4">🐝 Beehive Scales</h1>
 
-      {/* Sync button (only for authenticated users) */}
-      {status === "authenticated" && (
+      {/* Sync button (only for admins) */}
+      {status === "authenticated" && session?.user?.isAdmin && (
         <button
           onClick={syncScales}
           disabled={syncing}

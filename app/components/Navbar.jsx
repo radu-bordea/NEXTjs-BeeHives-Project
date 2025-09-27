@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { GiHamburgerMenu } from "react-icons/gi";
@@ -22,8 +22,7 @@ export default function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // For desktop dropdown
-
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
   const isActive = (path) => pathname === path;
@@ -40,11 +39,13 @@ export default function Navbar() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isMobileMenuOpen]);
 
-  // Filter nav items by session
-  const navItems = fullNavItems.filter((item) => {
-    if (item.protected && !session) return false;
-    return true;
-  });
+  // ✅ Only include protected items for admins
+  const navItems = useMemo(() => {
+    return fullNavItems.filter((item) => {
+      if (item.protected) return session?.user?.isAdmin === true;
+      return true;
+    });
+  }, [session]);
 
   return (
     <nav className="shadow-md p-4 relative z-50">
@@ -64,12 +65,12 @@ export default function Navbar() {
             </div>
           </Link>
           <Link href="/" className="flex items-center space-x-2">
-            <div className="relative w-6 h-6 ">
+            <div className="relative w-6 h-6">
               <Image
                 src="/assets/images/halogo.png"
                 alt="Logo"
                 fill
-                className={`object-contain ${!isDark ? 'dark:invert' : ''}`}
+                className={`object-contain ${!isDark ? "dark:invert" : ""}`}
                 priority
               />
             </div>
@@ -138,7 +139,7 @@ export default function Navbar() {
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-6 w-20 rounded  bg-gray-700 rounded shadow-lg z-50">
+                <div className="absolute right-0 mt-6 w-20 bg-gray-700 rounded shadow-lg z-50">
                   <button
                     onClick={() => {
                       setIsDropdownOpen(false);
