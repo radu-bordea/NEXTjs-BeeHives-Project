@@ -387,6 +387,25 @@ export default function ScaleDetailPage({ params: rawParams }) {
         </div>
       </div>
 
+      {/* 🔽 ADD THIS BLOCK HERE — download current view as CSV */}
+      {chartData && chartData.length > 0 && (
+        <div className="flex flex-wrap gap-2 justify-center mb-3">
+          <a
+            className="bg-indigo-700 text-white px-3 py-2 rounded hover:bg-indigo-600"
+            href={`/api/scale-data/${encodeURIComponent(
+              String(scale_id)
+            )}?resolution=${encodeURIComponent(
+              selectedResolution
+            )}&start=${encodeURIComponent(
+              startDate.toISOString()
+            )}&end=${encodeURIComponent(endDate.toISOString())}&format=csv`}
+          >
+            ⬇️ Download CSV (current view)
+          </a>
+        </div>
+      )}
+      {/* 🔼 END ADDED BLOCK */}
+
       {/* Loading */}
       {loading && (
         <div className="text-center text-gray-500">Loading data...</div>
