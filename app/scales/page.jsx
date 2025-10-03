@@ -263,6 +263,21 @@ export default function ScalesPage() {
       {/* Table with paginated data */}
       {paginatedData && (
         <>
+          {selectedScale && (
+            <div className="flex flex-wrap gap-2 my-3">
+              <a
+                className="bg-indigo-700 text-white px-3 py-2 rounded hover:bg-indigo-600"
+                href={`/api/scale-data/${encodeURIComponent(
+                  selectedScale.scale_id
+                )}?resolution=${encodeURIComponent(
+                  selectedResolution
+                )}&format=csv`}
+              >
+                ⬇️ Download CSV (all {selectedResolution})
+              </a>
+            </div>
+          )}
+
           <Table
             data={paginatedData}
             selectedResolution={selectedResolution}
