@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { useSession } from "next-auth/react";
 
 // Custom DatePicker button (unchanged)
 const CustomInputButton = forwardRef(function CustomInputButton(
@@ -129,6 +130,7 @@ export default function ScaleDetailPage({ params: rawParams }) {
   // Unwrap params promise (Next.js)
   const params = use(rawParams);
   const { scale_id } = params;
+  const { data: session, status } = useSession(); // current user session
 
   const [scales, setScales] = useState([]);
   const [chartData, setChartData] = useState([]);
@@ -559,22 +561,25 @@ export default function ScaleDetailPage({ params: rawParams }) {
       {metricTabs}
 
       {/* Download CSV (current view) — unchanged */}
-      {chartData && chartData.length > 0 && (
-        <div className="flex flex-wrap gap-2 justify-center mb-3">
-          <a
-            className="bg-indigo-700 text-white px-3 py-2 rounded hover:bg-indigo-600"
-            href={`/api/scale-data/${encodeURIComponent(
-              String(scale_id)
-            )}?resolution=${encodeURIComponent(
-              selectedResolution
-            )}&start=${encodeURIComponent(
-              startDate.toISOString()
-            )}&end=${encodeURIComponent(endDate.toISOString())}&format=csv`}
-          >
-            ⬇️ Download CSV (current view)
-          </a>
-        </div>
-      )}
+      {status === "authenticated" &&
+        session?.user?.isAdmin &&
+        chartData &&
+        chartData.length > 0 && (
+          <div className="flex flex-wrap gap-2 justify-center mb-3">
+            <a
+              className="bg-indigo-700 text-white px-3 py-2 rounded hover:bg-indigo-600"
+              href={`/api/scale-data/${encodeURIComponent(
+                String(scale_id)
+              )}?resolution=${encodeURIComponent(
+                selectedResolution
+              )}&start=${encodeURIComponent(
+                startDate.toISOString()
+              )}&end=${encodeURIComponent(endDate.toISOString())}&format=csv`}
+            >
+              ⬇️ Download CSV (current view)
+            </a>
+          </div>
+        )}
 
       {/* Loading */}
       {loading && (
