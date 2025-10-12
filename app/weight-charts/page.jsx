@@ -48,7 +48,7 @@ const CustomInputButton = forwardRef(function CustomInputButton(
     <button
       onClick={onClick}
       ref={ref}
-      className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-xl shadow transition text-xs sm:text-sm"
+      className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-xl shadow transition text-xs sm:text-sm cursor-pointer"
     >
       📅 <span>{value || "Choose date"}</span>
     </button>
@@ -63,22 +63,28 @@ const CustomInputButton = forwardRef(function CustomInputButton(
    - formatNum: round numbers to 2 decimals for UI
 ========================================================= */
 const COLORS = [
-  "#1e88e5",
-  "#fb8c00",
-  "#43a047",
-  "#e53935",
-  "#8e24aa",
-  "#00acc1",
-  "#7cb342",
-  "#f4511e",
-  "#5e35b1",
-  "#00897b",
-  "#6d4c41",
-  "#3949ab",
-  "#c0ca33",
-  "#5c6bc0",
-  "#0097a7",
+  "#1e88e5", // blue
+  "#fb8c00", // orange
+  "#43a047", // green
+  "#e53935", // red
+  "#8e24aa", // purple
+  "#00acc1", // cyan
+  "#7cb342", // lime green
+  "#f4511e", // deep orange
+  "#5e35b1", // indigo
+  "#00897b", // teal
+  "#6d4c41", // brown
+  "#3949ab", // blue indigo
+  "#c0ca33", // yellow-green
+  "#5c6bc0", // soft blue
+  "#0097a7", // cyan teal
+  "#d81b60", // pink
+  "#757575", // grey
+  "#9ccc65", // light green
+  "#ffb300", // amber
+  "#8d6e63", // warm brown
 ];
+
 
 // Deterministic color by scale id/name (hash → palette index)
 function colorFor(key) {
@@ -406,19 +412,20 @@ export default function WeightChartsPage() {
           <div className="flex gap-2 mb-2">
             <button
               onClick={selectAll}
-              className="px-2 py-1 text-xs rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+              className="px-2 py-1 text-xs rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer"
             >
               Select All (filtered)
             </button>
             <button
               onClick={clearAll}
-              className="px-2 py-1 text-xs rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+              className="px-2 py-1 text-xs rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer"
             >
               Clear
             </button>
           </div>
 
-          <div className="max-h-60 overflow-auto pr-1 space-y-1">
+          {/* Fixed-height scrollable list (same visual size as before) */}
+          <div className="h-40 overflow-y-auto pr-2 space-y-1">
             {filteredScales.map((s) => {
               const id = String(s.scale_id);
               const checked = selectedIds.includes(id);
@@ -501,8 +508,8 @@ export default function WeightChartsPage() {
                 onClick={() => setResolution("daily")}
                 className={`px-2 py-1 text-xs rounded cursor-pointer ${
                   resolution === "daily"
-                    ? "bg-green-700 text-white"
-                    : "bg-gray-200 text-gray-700"
+                    ? "bg-green-700 text-white hover:bg-green-800"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
                 Daily
@@ -511,8 +518,8 @@ export default function WeightChartsPage() {
                 onClick={() => setResolution("hourly")}
                 className={`px-2 py-1 text-xs rounded cursor-pointer ${
                   resolution === "hourly"
-                    ? "bg-blue-700 text-white"
-                    : "bg-gray-200 text-gray-700"
+                    ? "bg-blue-700 text-white hover:bg-blue-800"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
                 Hourly
@@ -524,7 +531,7 @@ export default function WeightChartsPage() {
         {/* C) View mode toggle */}
         <div className="rounded-lg border p-3 space-y-2">
           <div className="font-semibold text-sm">View</div>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="radio"
               name="viewmode"
@@ -534,7 +541,7 @@ export default function WeightChartsPage() {
             />
             Overlay (one chart, many lines)
           </label>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="radio"
               name="viewmode"
@@ -597,6 +604,7 @@ export default function WeightChartsPage() {
                     minTickGap={24}
                   />
                   <YAxis
+                  domain={['dataMin - 5', 'dataMax + 5']} // adds ±0.5 kg
                     tickFormatter={(v) =>
                       typeof v === "number" ? `${formatNum(v)}` : ""
                     }
@@ -646,53 +654,67 @@ export default function WeightChartsPage() {
           ) : (
             // Small multiples view: one mini chart per scale
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {smallMultiples.map(({ id, name, rows }) => (
-                <div key={id} className="rounded-xl border p-2">
-                  <div className="text-sm font-semibold mb-1">{name}</div>
-                  <div className="w-full h-[240px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={rows
-                          .map((r) => ({
-                            time: toIsoNoMs(r.time),
-                            weight: r.weight ?? r.Weight ?? r.WEIGHT,
-                          }))
-                          .sort((a, b) => new Date(a.time) - new Date(b.time))}
-                      >
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          strokeOpacity={0.4}
-                        />
-                        <XAxis
-                          dataKey="time"
-                          tickFormatter={(v) => formatDateTick(v, resolution)}
-                          minTickGap={20}
-                        />
-                        <YAxis
-                          tickFormatter={(v) =>
-                            typeof v === "number" ? `${formatNum(v)}` : ""
-                          }
-                        />
-                        <Tooltip
-                          labelFormatter={(v) => new Date(v).toLocaleString()}
-                          formatter={(value) => [
-                            `${formatNum(value)} kg`,
-                            "Weight",
-                          ]}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="weight"
-                          stroke={colorFor(id)}
-                          strokeWidth={2}
-                          dot={false}
-                          isAnimationActive={false}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
+              {smallMultiples.map(({ id, name, rows }) => {
+                // build & sort the series for this scale
+                const series = rows
+                  .map((r) => ({
+                    time: toIsoNoMs(r.time),
+                    weight: r.weight ?? r.Weight ?? r.WEIGHT,
+                  }))
+                  .sort((a, b) => new Date(a.time) - new Date(b.time));
+
+                // compute dynamic Y padding (10% of span; minimum 0.5)
+                const vals = series
+                  .map((d) => d.weight)
+                  .filter((v) => typeof v === "number" && Number.isFinite(v));
+                const yMin = vals.length ? Math.min(...vals) : 0;
+                const yMax = vals.length ? Math.max(...vals) : 1;
+                const span = Math.max(yMax - yMin, 0.0001);
+                const pad = Math.max(span * 0.1, 0.5); // 10% or at least 0.5 kg
+
+                return (
+                  <div key={id} className="rounded-xl border p-2">
+                    <div className="text-sm font-semibold mb-1">{name}</div>
+                    <div className="w-full h-[240px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={series}>
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            strokeOpacity={0.4}
+                          />
+                          <XAxis
+                            dataKey="time"
+                            tickFormatter={(v) => formatDateTick(v, resolution)}
+                            minTickGap={20}
+                          />
+                          <YAxis
+                            domain={[yMin - pad, yMax + pad]} // add top/bottom air
+                            tickFormatter={(v) =>
+                              typeof v === "number" ? `${formatNum(v)}` : ""
+                            }
+                          />
+                          <Tooltip
+                            labelFormatter={(v) => new Date(v).toLocaleString()}
+                            formatter={(value) => [
+                              `${formatNum(value)} kg`,
+                              "Weight",
+                            ]}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="weight"
+                            stroke={colorFor(id)}
+                            strokeWidth={2}
+                            dot={false}
+                            isAnimationActive={false}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
+
               {!smallMultiples.length && (
                 <div className="text-sm text-gray-500">
                   No data in selected window.
