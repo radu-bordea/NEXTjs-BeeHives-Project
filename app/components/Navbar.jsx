@@ -13,6 +13,7 @@ import Image from "next/image";
 const fullNavItems = [
   { label: "Home", path: "/" },
   { label: "Scales", path: "/scales" },
+  { label: "Weight-Charts", path: "/weight-charts" },
   { label: "Analytics", path: "/analytics" },
   { label: "Maps", path: "/maps" },
   { label: "Admin", path: "/admin", protected: true },
