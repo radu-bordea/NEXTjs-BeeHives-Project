@@ -1,6 +1,6 @@
-const SpinnerSmall = () => {
+const SpinnerSmall = ({mt, mx, w, h, color}) => {
   return (
-    <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+    <div className={`${mt} ${mx} ${w} ${h} border-2 border-${color}-600 border-t-transparent rounded-full animate-spin`}></div>
   );
 };
 

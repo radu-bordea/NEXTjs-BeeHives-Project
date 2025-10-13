@@ -34,6 +34,8 @@ import {
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import Link from "next/link";
+import Spinner from "../components/Spinner";
+import SpinnerSmall from "../components/SpinnerSmall";
 
 /* =========================================================
    Small UI helper: custom DatePicker trigger button
@@ -587,7 +589,11 @@ export default function WeightChartsPage() {
 
       {/* Error / Loading */}
       {error && <div className="text-red-500 text-sm">❌ {error}</div>}
-      {loading && <div className="text-gray-500 text-sm">Loading data…</div>}
+      {loading && (
+        <div className="text-gray-500 text-sm">
+          <SpinnerSmall mt="mt-36" mx="mx-auto" w="w-48" h="h-48" color="blue" />
+        </div>
+      )}
 
       {/* Charts area */}
       {!loading && selectedIds.length > 0 && (
@@ -604,7 +610,7 @@ export default function WeightChartsPage() {
                     minTickGap={24}
                   />
                   <YAxis
-                  domain={['dataMin - 5', 'dataMax + 5']} // adds ±0.5 kg
+                    domain={["dataMin - 5", "dataMax + 5"]} // adds ±0.5 kg
                     tickFormatter={(v) =>
                       typeof v === "number" ? `${formatNum(v)}` : ""
                     }
