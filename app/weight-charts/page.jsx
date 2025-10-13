@@ -591,7 +591,7 @@ export default function WeightChartsPage() {
       {error && <div className="text-red-500 text-sm">❌ {error}</div>}
       {loading && (
         <div className="text-gray-500 text-sm">
-          <SpinnerSmall mt="mt-36" mx="mx-auto" w="w-48" h="h-48" color="blue" />
+          <SpinnerSmall mt="mt-36" mx="mx-auto" w="w-48" h="h-48" border="border-blue-600" />
         </div>
       )}
 
