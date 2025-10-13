@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Spinner from "../components/Spinner";
 import Loading from "../components/Loading";
 import ScaleCard from "../components/ScaleCard";
 import Table from "../components/Table";
-import getPageRange from "@/utils/paginationRange"; // or your relative path
+import getPageRange from "@/utils/paginationRange";
 import { useSession } from "next-auth/react";
 
 export default function ScalesPage() {
@@ -17,7 +17,7 @@ export default function ScalesPage() {
   const [syncing, setSyncing] = useState(false); // sync all scales
   const [perScaleSyncing, setPerScaleSyncing] = useState({}); // syncing individual scale
   const [selectedScale, setSelectedScale] = useState(null); // scale selected for table
-  const [selectedResolution, setSelectedResolution] = useState("hourly"); // current resolution
+  const [selectedResolution, setSelectedResolution] = useState("daily"); // current resolution
   const [scaleDataHourly, setScaleDataHourly] = useState(null); // hourly data
   const [scaleDataDaily, setScaleDataDaily] = useState(null); // daily data
   const [error, setError] = useState(null); // error message
@@ -26,11 +26,14 @@ export default function ScalesPage() {
   const router = useRouter();
   const { data: session, status } = useSession(); // current user session
 
+  // abort controller for in-flight data fetches
+  const controllerRef = useRef(null);
+
   // Choose the correct data depending on resolution
   const fullData =
     selectedResolution === "hourly" ? scaleDataHourly : scaleDataDaily;
 
-  // ✅ NEW: sort the entire dataset (latest first) WITHOUT mutating original
+  // ✅ Sort the entire dataset (latest first) WITHOUT mutating original
   const sortedFullData = Array.isArray(fullData)
     ? [...fullData].sort((a, b) => {
         const at = new Date(a?.time).getTime();
@@ -85,13 +88,77 @@ export default function ScalesPage() {
     }
   };
 
+  // --- Load scale data for hourly/daily (Option A: manages its own loader) ---
+  const fetchScaleData = async (scaleId, resolution = "daily") => {
+    // start loader
+    setLoadTableData(true);
+
+    // cancel any in-flight request
+    if (controllerRef.current) controllerRef.current.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+
+    // reset/prepare state
+    setSelectedResolution(resolution);
+    setScaleDataHourly(null);
+    setScaleDataDaily(null);
+    setError(null);
+    setCurrentPage(1); // reset pagination
+
+    try {
+      const res = await fetch(
+        `/api/scale-data/${scaleId}?resolution=${resolution}`,
+        { signal: controller.signal }
+      );
+      if (!res.ok) throw new Error("Full data not yet available");
+
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error("No full data yet");
+      }
+
+      if (resolution === "hourly") {
+        setScaleDataHourly(data);
+      } else {
+        setScaleDataDaily(data);
+      }
+    } catch (err) {
+      if (err?.name === "AbortError") {
+        // aborted because a newer request started; don't touch state further
+        return;
+      }
+      console.warn("⚠️ Full data missing, trying preview...");
+      try {
+        const fallbackRes = await fetch(
+          `/api/scale-data/${scaleId}/latest?resolution=${resolution}&limit=20`,
+          { signal: controller.signal }
+        );
+        const fallback = await fallbackRes.json();
+        if (resolution === "hourly") {
+          setScaleDataHourly(fallback);
+        } else {
+          setScaleDataDaily(fallback);
+        }
+      } catch (fallbackErr) {
+        if (fallbackErr?.name === "AbortError") return;
+        console.error("❌ Fallback failed:", fallbackErr);
+        setError("Failed to load any data for this scale.");
+      }
+    } finally {
+      // Only clear loader if this is still the active request
+      if (controllerRef.current === controller) {
+        setLoadTableData(false);
+      }
+    }
+  };
+
   // When a scale card is clicked
   const handleData = (id) => {
     const scale = scales.find((s) => s.scale_id === id);
     if (scale) {
       setSelectedScale(scale);
-      fetchScaleData(id);
-      setLoadTableData(true);
+      // keep current resolution when switching scales
+      fetchScaleData(id, selectedResolution);
     }
   };
 
@@ -139,47 +206,6 @@ export default function ScalesPage() {
       setError("Sync failed due to an internal error.");
     } finally {
       setSyncing(false);
-    }
-  };
-
-  // Load scale data for hourly/daily
-  const fetchScaleData = async (scaleId, resolution = "daily") => {
-    setSelectedResolution(resolution);
-    setScaleDataHourly(null);
-    setScaleDataDaily(null);
-    setError(null);
-    setCurrentPage(1); // reset pagination
-
-    try {
-      const res = await fetch(
-        `/api/scale-data/${scaleId}?resolution=${resolution}`
-      );
-      if (!res.ok) throw new Error("Full data not yet available");
-
-      const data = await res.json();
-      if (data.length === 0) throw new Error("No full data yet");
-
-      if (resolution === "hourly") {
-        setScaleDataHourly(data);
-      } else {
-        setScaleDataDaily(data);
-      }
-    } catch (err) {
-      console.warn("⚠️ Full data missing, trying preview...");
-      try {
-        const fallbackRes = await fetch(
-          `/api/scale-data/${scaleId}/latest?resolution=${resolution}&limit=20`
-        );
-        const fallback = await fallbackRes.json();
-        if (resolution === "hourly") {
-          setScaleDataHourly(fallback);
-        } else {
-          setScaleDataDaily(fallback);
-        }
-      } catch (fallbackErr) {
-        console.error("❌ Fallback failed:", fallbackErr);
-        setError("Failed to load any data for this scale.");
-      }
     }
   };
 
@@ -242,7 +268,7 @@ export default function ScalesPage() {
 
       {/* Show scale cards or loading spinner */}
       {loading ? (
-        <Loading title="Loading Page..." />
+        <Spinner />
       ) : (
         <div className="overflow-x-auto md:overflow-x-visible">
           <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 w-max md:w-auto">
@@ -261,22 +287,24 @@ export default function ScalesPage() {
       )}
 
       {/* Table with paginated data */}
-      {paginatedData && (
+      {paginatedData && !loadTableData && (
         <>
-          {selectedScale && status === "authenticated" && session?.user?.isAdmin && (
-            <div className="flex flex-wrap gap-2 my-3">
-              <a
-                className="bg-indigo-700 text-white px-3 py-2 rounded hover:bg-indigo-600"
-                href={`/api/scale-data/${encodeURIComponent(
-                  selectedScale.scale_id
-                )}?resolution=${encodeURIComponent(
-                  selectedResolution
-                )}&format=csv`}
-              >
-                ⬇️ Download CSV (all {selectedResolution})
-              </a>
-            </div>
-          )}
+          {selectedScale &&
+            status === "authenticated" &&
+            session?.user?.isAdmin && (
+              <div className="flex flex-wrap gap-2 my-3">
+                <a
+                  className="bg-indigo-700 text-white px-3 py-2 rounded hover:bg-indigo-600"
+                  href={`/api/scale-data/${encodeURIComponent(
+                    selectedScale.scale_id
+                  )}?resolution=${encodeURIComponent(
+                    selectedResolution
+                  )}&format=csv`}
+                >
+                  ⬇️ Download CSV - selected scale ({selectedResolution})
+                </a>
+              </div>
+            )}
 
           <Table
             data={paginatedData}

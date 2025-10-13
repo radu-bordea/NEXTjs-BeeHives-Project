@@ -576,14 +576,14 @@ export default function ScaleDetailPage({ params: rawParams }) {
                 startDate.toISOString()
               )}&end=${encodeURIComponent(endDate.toISOString())}&format=csv`}
             >
-              ⬇️ Download CSV (current view)
+              ⬇️ Download CSV all metrics (current view)
             </a>
           </div>
         )}
 
       {/* Loading */}
       {loading && (
-        <div className="text-center text-gray-500">Loading data...</div>
+        <div className="text-center mb-4 text-gray-500">Loading data...</div>
       )}
 
       {/* Chart (now auto-picks chart type & units per metric) */}
