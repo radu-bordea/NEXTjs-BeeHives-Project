@@ -38,7 +38,7 @@ export default function ScaleCard({
           📊 View Data
         </button>
         {perScaleSyncing[scale.scale_id] && (
-          <SpinnerSmall mt="mt-0" mx="mx-auto" w="w-8" h="h-8" color="green" />
+          <SpinnerSmall mt="mt-0" mx="mx-auto" w="w-8" h="h-8" border="border-green-600" />
         )}
       </div>
 
