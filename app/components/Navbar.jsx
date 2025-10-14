@@ -8,13 +8,12 @@ import { AiOutlineDown, AiOutlineUp, AiOutlineClose } from "react-icons/ai";
 import DarkModeToggle from "./DarkModeToggle";
 import { signIn, signOut, useSession } from "next-auth/react";
 import Image from "next/image";
+import { ManualButton } from "./ManualButton";
 
-// Define all navigation items (admin is protected)
 const fullNavItems = [
   { label: "Home", path: "/" },
   { label: "Scales", path: "/scales" },
   { label: "Weight-Charts", path: "/weight-charts" },
-  // { label: "Analytics", path: "/analytics" },
   { label: "Maps", path: "/maps" },
   { label: "Admin", path: "/admin", protected: true },
 ];
@@ -34,13 +33,10 @@ export default function Navbar() {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") closeMenu();
     };
-    if (isMobileMenuOpen) {
-      document.addEventListener("keydown", handleKeyDown);
-    }
+    if (isMobileMenuOpen) document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isMobileMenuOpen]);
 
-  // ✅ Only include protected items for admins
   const navItems = useMemo(() => {
     return fullNavItems.filter((item) => {
       if (item.protected) return session?.user?.isAdmin === true;
@@ -78,8 +74,10 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* Mobile menu toggle */}
-        <div className="md:hidden">
+        {/* Mobile toolbar: Manual + Hamburger (visible only on mobile) */}
+        <div className="md:hidden flex items-center gap-3">
+          {/* Manual next to logo/hamburger on mobile */}
+          <ManualButton label="Manual" />
           <button
             onClick={toggleMobileMenu}
             className="text-gray-400 focus:outline-none"
@@ -106,6 +104,9 @@ export default function Navbar() {
               {label}
             </Link>
           ))}
+
+          {/* Desktop: keep Manual among links */}
+          <ManualButton label="Manual" />
 
           {!session ? (
             <button
@@ -157,7 +158,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile drawer */}
+      {/* Mobile drawer (no Manual button here anymore) */}
       <div
         className={`fixed top-0 right-0 h-full w-2/3 max-w-xs bg-white dark:bg-black shadow-lg transform transition-transform duration-300 ease-in-out z-40 ${
           isMobileMenuOpen ? "translate-x-0" : "translate-x-full"

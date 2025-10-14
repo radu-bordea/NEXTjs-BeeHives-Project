@@ -1,7 +1,9 @@
+import "./globals.css";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import AuthProvider from "./components/AuthProvider";
-import "./globals.css";
+import ManualPanel from "./components/ManualPanel";
+import { manualSections } from "@/lib/manual"; // ✅ Import the array
 
 export const metadata = {
   title: "BeeHives Project",
@@ -9,18 +11,22 @@ export const metadata = {
   description: "Check evolution of beehives data",
 };
 
-const MainLayout = ({ children }) => {
+export default function MainLayout({ children }) {
   return (
-    <AuthProvider>
-      <html lang="en" className="overflow-x-hidden">
-        <body className="flex flex-col min-h-screen overflow-x-hidden">
+    <html lang="en" className="overflow-x-hidden">
+      <body className="flex flex-col min-h-screen overflow-x-hidden">
+        <AuthProvider>
           <Navbar />
+          {/* ✅ Manual panel using imported sections */}
+          <ManualPanel
+            side="right"
+            title="Beehives Manual"
+            sections={manualSections}
+          />
           <main className="flex-grow">{children}</main>
           <Footer />
-        </body>
-      </html>
-    </AuthProvider>
+        </AuthProvider>
+      </body>
+    </html>
   );
-};
-
-export default MainLayout;
+}
