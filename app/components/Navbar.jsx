@@ -1,3 +1,4 @@
+// app/components/Navbar.jsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -5,10 +6,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { AiOutlineDown, AiOutlineUp, AiOutlineClose } from "react-icons/ai";
-import DarkModeToggle from "./DarkModeToggle";
+import ThemeToggle from "./ThemeToggle"; // <- renamed to ThemeToggle for clarity
 import { signIn, signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import { ManualButton } from "./ManualButton";
+
 
 const fullNavItems = [
   { label: "Home", path: "/" },
@@ -23,35 +25,43 @@ export default function Navbar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isDark, setIsDark] = useState(false);
 
   const isActive = (path) => pathname === path;
-  const toggleMobileMenu = () => setIsMobileMenuOpen((prev) => !prev);
+  const toggleMobileMenu = () => setIsMobileMenuOpen((p) => !p);
   const closeMenu = () => setIsMobileMenuOpen(false);
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const onEsc = (e) => {
       if (e.key === "Escape") closeMenu();
     };
-    if (isMobileMenuOpen) document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    if (isMobileMenuOpen) document.addEventListener("keydown", onEsc);
+    return () => document.removeEventListener("keydown", onEsc);
   }, [isMobileMenuOpen]);
 
-  const navItems = useMemo(() => {
-    return fullNavItems.filter((item) => {
-      if (item.protected) return session?.user?.isAdmin === true;
-      return true;
-    });
-  }, [session]);
+  const navItems = useMemo(
+    () =>
+      fullNavItems.filter((i) =>
+        i.protected ? session?.user?.isAdmin === true : true
+      ),
+    [session]
+  );
 
   return (
-    <nav className="shadow-md p-4 relative z-50 border-b-1 dark:border-b-gray-500">
+    <nav
+      className="
+        relative z-50 p-4 shadow-md border-b
+        bg-[color:var(--background)]
+        text-[color:var(--foreground)]
+        border-[color:var(--border)]
+      "
+    >
       <div className="flex items-center justify-between">
-        {/* Left: logo + toggle */}
-        <div className="flex items-center space-x-4">
-          <DarkModeToggle isDark={isDark} setIsDark={setIsDark} />
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="relative w-10 h-10">
+        {/* Left: theme + logos */}
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+
+          <Link href="/" className="flex items-center gap-2">
+            <span className="relative w-10 h-10">
               <Image
                 src="/assets/images/eulogo.png"
                 alt="Logo"
@@ -59,28 +69,28 @@ export default function Navbar() {
                 className="object-contain"
                 priority
               />
-            </div>
+            </span>
           </Link>
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="relative w-6 h-6">
+
+          <Link href="/" className="flex items-center gap-2 border-1 bg-black rounded-full p-0.5">
+            <span className="relative w-5 h-5">
               <Image
                 src="/assets/images/halogo.png"
                 alt="Logo"
                 fill
-                className={`object-contain ${!isDark ? "dark:invert" : ""}`}
+                className="object-contain"
                 priority
               />
-            </div>
+            </span>
           </Link>
         </div>
 
-        {/* Mobile toolbar: Manual + Hamburger (visible only on mobile) */}
+        {/* Mobile: Manual + Hamburger */}
         <div className="md:hidden flex items-center gap-3">
-          {/* Manual next to logo/hamburger on mobile */}
           <ManualButton label="Manual" />
           <button
             onClick={toggleMobileMenu}
-            className="text-gray-400 focus:outline-none"
+            className="opacity-70 supports-[hover:hover]:hover:opacity-100 focus:outline-none"
             aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? (
@@ -91,63 +101,71 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Desktop nav items */}
-        <div className="hidden md:flex space-x-6 items-center">
+        {/* Desktop nav */}
+        <div className="hidden md:flex items-center gap-6">
           {navItems.map(({ path, label }) => (
             <Link
               key={path}
               href={path}
-              className={`hover:text-blue-400 ${
-                isActive(path) ? "text-blue-400" : "text-gray-400"
-              }`}
+              className={`
+                transition
+                ${
+                  isActive(path)
+                    ? "text-blue-600 dark:text-blue-400"
+                    : "opacity-80 supports-[hover:hover]:hover:opacity-100"
+                }
+              `}
             >
               {label}
             </Link>
           ))}
 
-          {/* Desktop: keep Manual among links */}
           <ManualButton label="Manual" />
 
           {!session ? (
             <button
               onClick={() => signIn("google")}
-              className="text-gray-400 hover:text-blue-400"
+              className="transition opacity-80 supports-[hover:hover]:hover:opacity-100"
             >
               Login
             </button>
           ) : (
             <div className="relative">
               <button
-                onClick={() => setIsDropdownOpen((prev) => !prev)}
-                className="flex items-center space-x-2 focus:outline-none"
+                onClick={() => setIsDropdownOpen((p) => !p)}
+                className="flex items-center gap-2 focus:outline-none transition opacity-80 supports-[hover:hover]:hover:opacity-100"
               >
                 {session.user.image && (
                   <img
                     src={session.user.image}
                     alt="User Avatar"
-                    className="w-8 h-8 rounded-full border border-gray-300"
+                    className="w-8 h-8 rounded-full border border-[color:var(--border)]"
                   />
                 )}
                 {session.user.name && (
-                  <span className="text-gray-400 text-sm">
-                    {session.user.name}
-                  </span>
+                  <span className="text-sm">{session.user.name}</span>
                 )}
                 {isDropdownOpen ? (
-                  <AiOutlineUp className="w-4 h-4 text-gray-400" />
+                  <AiOutlineUp className="w-4 h-4" />
                 ) : (
-                  <AiOutlineDown className="w-4 h-4 text-gray-400" />
+                  <AiOutlineDown className="w-4 h-4" />
                 )}
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-6 w-20 bg-gray-700 rounded shadow-lg z-50">
+                <div
+                  className="
+                    absolute right-0 mt-2 w-28 rounded-lg shadow-lg z-50
+                    bg-[color:var(--card)]
+                    border border-[color:var(--border)]
+                  "
+                >
                   <button
                     onClick={() => {
                       setIsDropdownOpen(false);
                       signOut({ callbackUrl: "/" });
                     }}
-                    className="block w-full text-left px-4 py-2 text-sm cursor-pointer text-red-200"
+                    className="block w-full text-left px-3 py-2 text-sm text-red-500 supports-[hover:hover]:hover:opacity-90"
                   >
                     Logout
                   </button>
@@ -158,22 +176,28 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile drawer (no Manual button here anymore) */}
+      {/* Mobile drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-2/3 max-w-xs bg-white dark:bg-black shadow-lg transform transition-transform duration-300 ease-in-out z-40 ${
-          isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+        className={`
+          fixed top-0 right-0 h-full w-2/3 max-w-xs z-40
+          shadow-lg transform transition-transform duration-300 ease-in-out
+          bg-[color:var(--card)] text-[color:var(--foreground)] border-l border-[color:var(--border)]
+          ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"}
+        `}
       >
-        <div className="flex flex-col p-4 space-y-4">
+        <div className="flex flex-col p-4 gap-4">
           {navItems.map(({ path, label }) => (
             <Link
               key={path}
               href={path}
-              className={`text-lg hover:text-blue-400 ${
-                isActive(path)
-                  ? "text-blue-400"
-                  : "text-gray-800 dark:text-gray-300"
-              }`}
+              className={`
+                text-lg transition
+                ${
+                  isActive(path)
+                    ? "text-blue-600 dark:text-blue-400"
+                    : "opacity-90 supports-[hover:hover]:hover:opacity-100"
+                }
+              `}
               onClick={closeMenu}
             >
               {label}
@@ -186,30 +210,28 @@ export default function Navbar() {
                 signIn("google");
                 closeMenu();
               }}
-              className="text-lg text-gray-800 dark:text-gray-300 hover:text-blue-400 text-left"
+              className="text-lg text-left transition opacity-90 supports-[hover:hover]:hover:opacity-100"
             >
               Login
             </button>
           ) : (
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-3">
               {session.user.image && (
                 <img
                   src={session.user.image}
                   alt="User Avatar"
-                  className="w-8 h-8 rounded-full border border-gray-300"
+                  className="w-8 h-8 rounded-full border border-[color:var(--border)]"
                 />
               )}
               {session.user.name && (
-                <span className="text-gray-400 text-sm">
-                  {session.user.name}
-                </span>
+                <span className="text-sm opacity-80">{session.user.name}</span>
               )}
               <button
                 onClick={() => {
                   signOut({ callbackUrl: "/" });
                   closeMenu();
                 }}
-                className="text-lg text-red-400 hover:text-red-400 text-left cursor-pointer"
+                className="text-lg text-left text-red-500 supports-[hover:hover]:hover:opacity-90"
               >
                 Logout
               </button>
@@ -222,7 +244,7 @@ export default function Navbar() {
       {isMobileMenuOpen && (
         <div
           onClick={closeMenu}
-          className="fixed inset-0 bg-black/50 dark:bg-white/10 z-30"
+          className="fixed inset-0 bg-black/40 z-30"
           aria-hidden="true"
         />
       )}
