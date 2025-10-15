@@ -1,9 +1,11 @@
+// app/layout.jsx
 import "./globals.css";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import AuthProvider from "./components/AuthProvider";
 import ManualPanel from "./components/ManualPanel";
-import { manualSections } from "@/lib/manual"; // ✅ Import the array
+import ThemeScript from "./components/ThemeScript";
+import { manualSections } from "@/lib/manual";
 
 export const metadata = {
   title: "BeeHives Project",
@@ -13,11 +15,26 @@ export const metadata = {
 
 export default function MainLayout({ children }) {
   return (
-    <html lang="en" className="overflow-x-hidden">
-      <body className="flex flex-col min-h-screen overflow-x-hidden">
+    <html lang="en" className="overflow-x-hidden" suppressHydrationWarning>
+      <head>
+        {/* Let browsers know we support both schemes */}
+        <meta name="color-scheme" content="light dark" />
+        {/* theme-color is set dynamically by ThemeScript too */}
+        <meta
+          name="theme-color"
+          content="#ffffff"
+          media="(prefers-color-scheme: light)"
+        />
+        <meta
+          name="theme-color"
+          content="#0a0a0a"
+          media="(prefers-color-scheme: dark)"
+        />
+        <ThemeScript />
+      </head>
+      <body className="flex flex-col min-h-screen overflow-x-hidden bg-[color:var(--background)] text-[color:var(--foreground)]">
         <AuthProvider>
           <Navbar />
-          {/* ✅ Manual panel using imported sections */}
           <ManualPanel
             side="right"
             title="Beehives Manual"

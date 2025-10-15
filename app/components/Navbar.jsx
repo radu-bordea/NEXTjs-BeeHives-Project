@@ -45,7 +45,7 @@ export default function Navbar() {
   }, [session]);
 
   return (
-    <nav className="shadow-md p-4 relative z-50">
+    <nav className="shadow-md p-4 relative z-50 border-b-1 dark:border-b-gray-500">
       <div className="flex items-center justify-between">
         {/* Left: logo + toggle */}
         <div className="flex items-center space-x-4">

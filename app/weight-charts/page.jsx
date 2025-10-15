@@ -408,7 +408,7 @@ export default function WeightChartsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name or id..."
-            className="w-full text-sm px-2 py-1 mb-2 rounded border bg-white dark:bg-black dark:text-white"
+            className="w-full text-sm px-2 py-1 mb-2 rounded border  "
           />
 
           <div className="flex gap-2 mb-2">
@@ -434,7 +434,7 @@ export default function WeightChartsPage() {
               return (
                 <label
                   key={id}
-                  className="flex items-center justify-between gap-2 text-sm px-2 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                  className="flex items-center justify-between gap-2 text-sm px-2 py-1 rounded hover:bg-neutral-500 hover:text-neutral-200 cursor-pointer"
                 >
                   <span className="truncate">
                     {s.name || `ID: ${id}`}{" "}
