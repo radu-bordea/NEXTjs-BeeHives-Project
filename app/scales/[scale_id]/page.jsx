@@ -19,8 +19,6 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useSession } from "next-auth/react";
 
-import SnapshotFb from "@/app/components/SnapshotFb";
-
 // Custom DatePicker button (unchanged)
 const CustomInputButton = forwardRef(function CustomInputButton(
   { value, onClick },
@@ -686,13 +684,6 @@ export default function ScaleDetailPage({ params: rawParams }) {
           Hourly
         </button>
       </div>
-
-      {/* 📸 Floating snapshot button */}
-      <SnapshotFb
-        selector="main .recharts-wrapper, main canvas, main svg, canvas, svg"
-        filenameBase="beehives-chart"
-      />
-
 
       {/* No data */}
       {!loading && (!activeMetric || !hasDataForKey(activeMetric)) && (
