@@ -475,7 +475,7 @@ export default function ScaleDetailPage({ params: rawParams }) {
       // create a temporary link to download
       const link = document.createElement("a");
       link.href = dataUrl;
-      link.download = "screenshot.png";
+      link.download = "scale-metric.png";
       link.click();
     } catch (err) {
       console.error("❌ Screenshot failed:", err);
@@ -673,21 +673,21 @@ export default function ScaleDetailPage({ params: rawParams }) {
         {/* Y-axis zoom & resolution buttons (unchanged) */}
         <div className="flex flex-wrap gap-2 justify-center mb-2">
           <button
-            className="w-8 px-1 py-1 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-400 cursor-pointer"
+            className="w-8 px-1 py-1 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 cursor-pointer"
             onClick={zoomInY}
             title="Zoom in Y"
           >
             +
           </button>
           <button
-            className="w-8 px-1 py-1 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-400 cursor-pointer"
+            className="w-8 px-1 py-1 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 cursor-pointer"
             onClick={zoomOutY}
             title="Zoom out Y"
           >
             -
           </button>
           <button
-            className="px-2 text-sm py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-400"
+            className="px-2 text-sm py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
             onClick={resetY}
             title="Auto fit Y to data"
           >
@@ -700,8 +700,8 @@ export default function ScaleDetailPage({ params: rawParams }) {
             onClick={() => setSelectedResolution("daily")}
             className={`px-2 text-sm py-1 rounded cursor-pointer ${
               selectedResolution === "daily"
-                ? "bg-green-700 text-white"
-                : "bg-gray-200 text-gray-700"
+                ? "bg-green-700 text-white hover:bg-green-800"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
             Daily
@@ -710,17 +710,17 @@ export default function ScaleDetailPage({ params: rawParams }) {
             onClick={() => setSelectedResolution("hourly")}
             className={`px-2 text-sm py-1 rounded cursor-pointer ${
               selectedResolution === "hourly"
-                ? "bg-blue-700 text-white"
-                : "bg-gray-200 text-gray-700"
+                ? "bg-blue-700 hover:bg-blue-800 text-white"
+                : "bg-gray-200 hover:bg-gray-300 text-gray-700"
             }`}
           >
             Hourly
           </button>
           <button
             onClick={handleScreenshot}
-            className="text-sm p-1 rounded cursor-pointer bg-red-300 text-neutral-950"
+            className="text-sm p-1 rounded cursor-pointer bg-red-300 hover:bg-red-400 hover:text-neutral-200 text-neutral-950"
           >
-            📸 Screenshot
+           Snap 📸
           </button>
         </div>
       </div>
