@@ -34,8 +34,8 @@ import {
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import Link from "next/link";
-import Spinner from "../components/Spinner";
 import SpinnerSmall from "../components/SpinnerSmall";
+import * as htmlToImage from "html-to-image";
 
 /* =========================================================
    Small UI helper: custom DatePicker trigger button
@@ -86,7 +86,6 @@ const COLORS = [
   "#ffb300", // amber
   "#8d6e63", // warm brown
 ];
-
 
 // Deterministic color by scale id/name (hash → palette index)
 function colorFor(key) {
@@ -198,6 +197,8 @@ export default function WeightChartsPage() {
   const [selectedIds, setSelectedIds] = useState([]); // which scales are selected
   const [resolution, setResolution] = useState("daily"); // daily | hourly
   const [viewMode, setViewMode] = useState("overlay"); // overlay | smallmult
+  const captureRef = useRef(null);
+  const [image, setImage] = useState(null);
 
   // Date range controls (default last 14 days → "quick to good")
   const now = () => new Date();
@@ -370,6 +371,31 @@ export default function WeightChartsPage() {
     const n = now();
     setStartDate(addDays(n, -days));
     setEndDate(n);
+  };
+
+  const handleScreenshot = async () => {
+    if (!captureRef.current) return;
+
+    try {
+      // fix background color
+      const bg = getComputedStyle(document.body).backgroundColor || "#ffffff";
+
+      // render to PNG
+      const dataUrl = await htmlToImage.toPng(captureRef.current, {
+        pixelRatio: 2,
+        backgroundColor: bg,
+        cacheBust: true,
+      });
+
+      // create a temporary link to download
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = "weight-screenshot.png";
+      link.click();
+    } catch (err) {
+      console.error("❌ Screenshot failed:", err);
+      alert("Could not take screenshot.");
+    }
   };
 
   /* =========================================================
@@ -591,7 +617,13 @@ export default function WeightChartsPage() {
       {error && <div className="text-red-500 text-sm">❌ {error}</div>}
       {loading && (
         <div className="text-gray-500 text-sm">
-          <SpinnerSmall mt="mt-36" mx="mx-auto" w="w-48" h="h-48" border="border-blue-600" />
+          <SpinnerSmall
+            mt="mt-36"
+            mx="mx-auto"
+            w="w-48"
+            h="h-48"
+            border="border-blue-600"
+          />
         </div>
       )}
 
@@ -600,7 +632,10 @@ export default function WeightChartsPage() {
         <>
           {/* Overlay view: one chart, many lines */}
           {viewMode === "overlay" ? (
-            <div className="w-full h-[420px] md:h-[540px] rounded-xl border p-2">
+            <div
+              ref={captureRef}
+              className="w-full h-[420px] md:h-[540px] rounded-xl border p-2"
+            >
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={overlayData}>
                   <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.4} />
@@ -659,7 +694,10 @@ export default function WeightChartsPage() {
             </div>
           ) : (
             // Small multiples view: one mini chart per scale
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div
+              ref={captureRef}
+              className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+            >
               {smallMultiples.map(({ id, name, rows }) => {
                 // build & sort the series for this scale
                 const series = rows
@@ -728,6 +766,15 @@ export default function WeightChartsPage() {
               )}
             </div>
           )}
+
+          <div className="text-center">
+          <button
+            onClick={handleScreenshot}
+            className="text-sm p-1 rounded cursor-pointer bg-red-300 hover:bg-red-400 hover:text-neutral-200 text-neutral-950"
+          >
+           Snap 📸
+          </button>
+          </div>
         </>
       )}
 
