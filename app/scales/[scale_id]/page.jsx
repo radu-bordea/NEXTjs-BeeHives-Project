@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, forwardRef } from "react";
+import React, { useEffect, useMemo, useState, forwardRef, useRef } from "react";
 import { use } from "react";
 import Link from "next/link";
 import {
@@ -18,6 +18,7 @@ import {
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useSession } from "next-auth/react";
+import * as htmlToImage from "html-to-image";
 
 // Custom DatePicker button (unchanged)
 const CustomInputButton = forwardRef(function CustomInputButton(
@@ -137,6 +138,8 @@ export default function ScaleDetailPage({ params: rawParams }) {
   const [loading, setLoading] = useState(false);
 
   const [selectedResolution, setSelectedResolution] = useState("daily");
+  const captureRef = useRef(null);
+  const [image, setImage] = useState(null);
 
   // ---- timeframe & dates (unchanged) ----
   const [timeframe, setTimeframe] = useState(7);
@@ -455,6 +458,31 @@ export default function ScaleDetailPage({ params: rawParams }) {
     return [low, high];
   }
 
+  const handleScreenshot = async () => {
+    if (!captureRef.current) return;
+
+    try {
+      // fix background color
+      const bg = getComputedStyle(document.body).backgroundColor || "#ffffff";
+
+      // render to PNG
+      const dataUrl = await htmlToImage.toPng(captureRef.current, {
+        pixelRatio: 2,
+        backgroundColor: bg,
+        cacheBust: true,
+      });
+
+      // create a temporary link to download
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = "screenshot.png";
+      link.click();
+    } catch (err) {
+      console.error("❌ Screenshot failed:", err);
+      alert("Could not take screenshot.");
+    }
+  };
+
   return (
     <div className="p-2 dark:text-gray-400">
       {/* Header + Date pickers ,+ quick range + scales + metric + chart + zoom */}
@@ -537,152 +565,164 @@ export default function ScaleDetailPage({ params: rawParams }) {
         </div>
       </div>
 
-      {/* Scales (unchanged) */}
-      <div className="w-full overflow-x-auto touch-pan-x mb-3">
-        <div className="flex gap-1 w-max whitespace-nowrap px-2">
-          {scales.map((scale) => (
-            <Link
-              key={scale.scale_id}
-              href={`/scales/${scale.scale_id}`}
-              onClick={() => setActiveScale(scale.name)}
-              className={`shrink-0 px-3 py-1 text-xs sm:text-sm rounded cursor-pointer ${
-                activeScale === scale.name
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700"
-              }`}
-            >
-              {scale.name || `ID: ${scale.scale_id}`}
-            </Link>
-          ))}
+      {/** Screenshot to capture */}
+      <div ref={captureRef} className="py-2">
+        {/* Scales (unchanged) */}
+        <div className="w-full overflow-x-auto touch-pan-x mb-3">
+          <div className="flex gap-1 w-max whitespace-nowrap px-2">
+            {scales.map((scale) => (
+              <Link
+                key={scale.scale_id}
+                href={`/scales/${scale.scale_id}`}
+                onClick={() => setActiveScale(scale.name)}
+                className={`shrink-0 px-3 py-1 text-xs sm:text-sm rounded cursor-pointer ${
+                  activeScale === scale.name
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 text-gray-700"
+                }`}
+              >
+                {scale.name || `ID: ${scale.scale_id}`}
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Metric tabs: now dynamic */}
-      {metricTabs}
+        {/* Metric tabs: now dynamic */}
+        {metricTabs}
 
-      {/* Download CSV (current view) — unchanged */}
-      {status === "authenticated" &&
-        session?.user?.isAdmin &&
-        chartData &&
-        chartData.length > 0 && (
-          <div className="flex flex-wrap gap-2 justify-center mb-3">
-            <a
-              className="bg-indigo-700 text-white px-3 py-2 rounded hover:bg-indigo-600"
-              href={`/api/scale-data/${encodeURIComponent(
-                String(scale_id)
-              )}?resolution=${encodeURIComponent(
-                selectedResolution
-              )}&start=${encodeURIComponent(
-                startDate.toISOString()
-              )}&end=${encodeURIComponent(endDate.toISOString())}&format=csv`}
-            >
-              ⬇️ Download CSV all metrics (current view)
-            </a>
+        {/* Download CSV (current view) — unchanged */}
+        {status === "authenticated" &&
+          session?.user?.isAdmin &&
+          chartData &&
+          chartData.length > 0 && (
+            <div className="flex flex-wrap gap-2 justify-center mb-3">
+              <a
+                className="bg-indigo-700 text-white px-3 py-2 rounded hover:bg-indigo-600"
+                href={`/api/scale-data/${encodeURIComponent(
+                  String(scale_id)
+                )}?resolution=${encodeURIComponent(
+                  selectedResolution
+                )}&start=${encodeURIComponent(
+                  startDate.toISOString()
+                )}&end=${encodeURIComponent(endDate.toISOString())}&format=csv`}
+              >
+                ⬇️ Download CSV all metrics (current view)
+              </a>
+            </div>
+          )}
+
+        {/* Loading */}
+        {loading && (
+          <div className="text-center mb-4 text-gray-500">Loading data...</div>
+        )}
+
+        {/* Chart (now auto-picks chart type & units per metric) */}
+        {!loading && activeMetric && hasDataForKey(activeMetric) && (
+          <div className="w-full h-[350px] md:h-[550px]">
+            <ResponsiveContainer width="100%" height="100%">
+              {chooseChartType(activeMetric) === "bar" ? (
+                <BarChart data={seriesData}>
+                  <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
+                  <XAxis dataKey="time" tickFormatter={formatDate} />
+                  <YAxis
+                    domain={yDomain}
+                    tickFormatter={(v) => formatY(v, activeMetric)}
+                  />
+                  <Tooltip
+                    labelFormatter={formatDate}
+                    formatter={(value) => [
+                      formatY(value, activeMetric),
+                      prettyLabel(activeMetric),
+                    ]}
+                  />
+                  <Legend formatter={() => prettyLabel(activeMetric)} />
+                  <Bar
+                    dataKey={activeMetric}
+                    fill={metricColor(activeMetric)}
+                  />
+                </BarChart>
+              ) : (
+                <LineChart data={seriesData}>
+                  <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
+                  <XAxis dataKey="time" tickFormatter={formatDate} />
+                  <YAxis
+                    domain={yDomain}
+                    tickFormatter={(v) => formatY(v, activeMetric)}
+                  />
+                  <Tooltip
+                    labelFormatter={formatDate}
+                    formatter={(value) => [
+                      formatY(value, activeMetric),
+                      prettyLabel(activeMetric),
+                    ]}
+                  />
+                  <Legend formatter={() => prettyLabel(activeMetric)} />
+                  <Line
+                    dataKey={activeMetric}
+                    stroke={metricColor(activeMetric)}
+                    strokeWidth={2}
+                    type="monotone"
+                    dot={false}
+                  />
+                </LineChart>
+              )}
+            </ResponsiveContainer>
           </div>
         )}
 
-      {/* Loading */}
-      {loading && (
-        <div className="text-center mb-4 text-gray-500">Loading data...</div>
-      )}
+        {/* Y-axis zoom & resolution buttons (unchanged) */}
+        <div className="flex flex-wrap gap-2 justify-center mb-2">
+          <button
+            className="w-8 px-1 py-1 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-400 cursor-pointer"
+            onClick={zoomInY}
+            title="Zoom in Y"
+          >
+            +
+          </button>
+          <button
+            className="w-8 px-1 py-1 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-400 cursor-pointer"
+            onClick={zoomOutY}
+            title="Zoom out Y"
+          >
+            -
+          </button>
+          <button
+            className="px-2 text-sm py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-400"
+            onClick={resetY}
+            title="Auto fit Y to data"
+          >
+            Reset Y
+          </button>
 
-      {/* Chart (now auto-picks chart type & units per metric) */}
-      {!loading && activeMetric && hasDataForKey(activeMetric) && (
-        <div className="w-full h-[350px] md:h-[550px]">
-          <ResponsiveContainer width="100%" height="100%">
-            {chooseChartType(activeMetric) === "bar" ? (
-              <BarChart data={seriesData}>
-                <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-                <XAxis dataKey="time" tickFormatter={formatDate} />
-                <YAxis
-                  domain={yDomain}
-                  tickFormatter={(v) => formatY(v, activeMetric)}
-                />
-                <Tooltip
-                  labelFormatter={formatDate}
-                  formatter={(value) => [
-                    formatY(value, activeMetric),
-                    prettyLabel(activeMetric),
-                  ]}
-                />
-                <Legend formatter={() => prettyLabel(activeMetric)} />
-                <Bar dataKey={activeMetric} fill={metricColor(activeMetric)} />
-              </BarChart>
-            ) : (
-              <LineChart data={seriesData}>
-                <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-                <XAxis dataKey="time" tickFormatter={formatDate} />
-                <YAxis
-                  domain={yDomain}
-                  tickFormatter={(v) => formatY(v, activeMetric)}
-                />
-                <Tooltip
-                  labelFormatter={formatDate}
-                  formatter={(value) => [
-                    formatY(value, activeMetric),
-                    prettyLabel(activeMetric),
-                  ]}
-                />
-                <Legend formatter={() => prettyLabel(activeMetric)} />
-                <Line
-                  dataKey={activeMetric}
-                  stroke={metricColor(activeMetric)}
-                  strokeWidth={2}
-                  type="monotone"
-                  dot={false}
-                />
-              </LineChart>
-            )}
-          </ResponsiveContainer>
+          <div className="mx-2 h-5 w-px bg-gray-300" />
+
+          <button
+            onClick={() => setSelectedResolution("daily")}
+            className={`px-2 text-sm py-1 rounded cursor-pointer ${
+              selectedResolution === "daily"
+                ? "bg-green-700 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
+          >
+            Daily
+          </button>
+          <button
+            onClick={() => setSelectedResolution("hourly")}
+            className={`px-2 text-sm py-1 rounded cursor-pointer ${
+              selectedResolution === "hourly"
+                ? "bg-blue-700 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
+          >
+            Hourly
+          </button>
+          <button
+            onClick={handleScreenshot}
+            className="text-sm p-1 rounded cursor-pointer bg-red-300 text-neutral-950"
+          >
+            📸 Screenshot
+          </button>
         </div>
-      )}
-
-      {/* Y-axis zoom & resolution buttons (unchanged) */}
-      <div className="flex flex-wrap gap-2 justify-center mb-2">
-        <button
-          className="w-8 px-1 py-1 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-400 cursor-pointer"
-          onClick={zoomInY}
-          title="Zoom in Y"
-        >
-          +
-        </button>
-        <button
-          className="w-8 px-1 py-1 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-400 cursor-pointer"
-          onClick={zoomOutY}
-          title="Zoom out Y"
-        >
-          -
-        </button>
-        <button
-          className="px-2 text-sm py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-400"
-          onClick={resetY}
-          title="Auto fit Y to data"
-        >
-          Reset Y
-        </button>
-
-        <div className="mx-2 h-5 w-px bg-gray-300" />
-
-        <button
-          onClick={() => setSelectedResolution("daily")}
-          className={`px-2 text-sm py-1 rounded cursor-pointer ${
-            selectedResolution === "daily"
-              ? "bg-green-700 text-white"
-              : "bg-gray-200 text-gray-700"
-          }`}
-        >
-          Daily
-        </button>
-        <button
-          onClick={() => setSelectedResolution("hourly")}
-          className={`px-2 text-sm py-1 rounded cursor-pointer ${
-            selectedResolution === "hourly"
-              ? "bg-blue-700 text-white"
-              : "bg-gray-200 text-gray-700"
-          }`}
-        >
-          Hourly
-        </button>
       </div>
 
       {/* No data */}
