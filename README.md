@@ -11,6 +11,8 @@
 - npm install next-auth
 - npm i react-geocode mapbox-gl react-map-gl
 - npm i html-to-image
+- npm install html2canvas
+- npm install html-to-image
 
 
 
