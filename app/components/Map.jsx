@@ -2,11 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLang } from "../components/LanguageProvider";
 
 const Map = ({ scales }) => {
-  const mapRef = useRef(null); // Reference to attach the Google Map DOM element
-  const [mapLoaded, setMapLoaded] = useState(false); // Tracks if the Google Maps API has finished loading
+  const mapRef = useRef(null); // DOM node for <div> where map renders
+  const [mapLoaded, setMapLoaded] = useState(false); // Has Google Maps API loaded?
   const router = useRouter();
+
+  // translation hook
+  const { t, lang } = useLang();
 
   // 🔄 Fetch latest data (last 7 daily records) for a given scale
   const fetchLatestData = async (scaleId) => {
@@ -59,7 +63,7 @@ const Map = ({ scales }) => {
         if (!document.getElementById(scriptId)) {
           const script = document.createElement("script");
           script.id = scriptId;
-          script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`;
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&language=en`;
           script.async = true;
           script.onload = resolve;
           document.body.appendChild(script);
@@ -112,26 +116,84 @@ const Map = ({ scales }) => {
       // 📦 Fetch the latest 7-day data and pick the most recent
       const latestData = await fetchLatestData(scale.scale_id);
 
+      // helper to safely show a value or fallback
+      const fmt = (val, unit = "") => {
+        if (val === null || val === undefined) {
+          return t("maps.na");
+        }
+        return unit ? `${val} ${unit}` : `${val}`;
+      };
+
+      // localized date string
+      const dateStr = latestData?.time
+        ? new Date(latestData.time).toLocaleDateString(
+            lang === "sv" ? "sv-SE" : "en-US"
+          )
+        : t("maps.na");
+
       // ℹ️ Build the HTML content for the marker's info window
+      // We FORCE a light card so it's readable even in dark mode map/app.
       const infowindow = new window.google.maps.InfoWindow({
         content: `
-          <div>
-            <strong>${scale.name}</strong><br/>
-            Scale ID: ${scale.scale_id}<br/>
-            ${
-              latestData
-                ? `
-                  Date: ${new Date(latestData.time).toLocaleDateString()}<br/>
-                  Weight: <strong>${latestData.weight ?? "N/A"} kg</strong><br/>
-                  Yield: ${latestData.yield ?? "N/A"}<br/>
-                  Temp: ${latestData.temperature ?? "N/A"} °C<br/>
-                  Brood: ${latestData.brood ?? "N/A"}<br/>
-                  Humidity: ${latestData.humidity ?? "N/A"}<br/>
-                `
-                : "No recent data available.<br/>"
-            }
-            👉 <a href="/scales" class="go-to-scales" style="color:blue; text-decoration:underline;">Go To Scales</a></br>
-            👉 <a href="/scales/${scale.scale_id}" class="go-to-scales" style="color:blue; text-decoration:underline;">${scale.name} charts</a>
+          <div
+            style="
+              background:#ffffff;
+              color:#111827;
+              border:1px solid #e5e7eb;
+              border-radius:8px;
+              padding:12px;
+              font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+              font-size:13px;
+              line-height:1.4;
+              min-width:180px;
+              max-width:240px;
+            "
+          >
+            <div style="font-weight:600; font-size:14px; margin-bottom:4px;">
+              ${scale.name}
+            </div>
+
+            <div style="margin-bottom:8px;">
+              ${t("maps.scaleId")}: ${scale.scale_id}<br/>
+              ${
+                latestData
+                  ? `
+                    ${t("maps.date")}: ${dateStr}<br/>
+                    ${t("maps.weight")}: <strong>${fmt(
+                      latestData.weight,
+                      "kg"
+                    )}</strong><br/>
+                    ${t("maps.yield")}: ${fmt(latestData.yield)}<br/>
+                    ${t("maps.temp")}: ${fmt(
+                      latestData.temperature,
+                      "°C"
+                    )}<br/>
+                    ${t("maps.brood")}: ${fmt(latestData.brood)}<br/>
+                    ${t("maps.humidity")}: ${fmt(
+                      latestData.humidity,
+                      "%"
+                    )}<br/>
+                  `
+                  : `${t("maps.noRecent")}<br/>`
+              }
+            </div>
+
+            <div style="font-size:13px;">
+              👉 <a
+                href="/scales"
+                class="go-to-scales"
+                style="color:#1d4ed8; text-decoration:underline; font-weight:500;"
+              >
+                ${t("maps.gotoScales")}
+              </a><br/>
+              👉 <a
+                href="/scales/${scale.scale_id}"
+                class="go-to-charts"
+                style="color:#1d4ed8; text-decoration:underline; font-weight:500;"
+              >
+                ${scale.name} ${t("maps.chartsLink")}
+              </a>
+            </div>
           </div>
         `,
       });
@@ -140,18 +202,27 @@ const Map = ({ scales }) => {
       marker.addListener("click", () => {
         infowindow.open(map, marker);
 
-        // 📦 Attach navigation handler to internal link
+        // 📦 Attach navigation handler to internal links (SPA style)
         setTimeout(() => {
-          const btn = document.querySelector(".go-to-scales");
-          if (btn) {
-            btn.addEventListener("click", () => {
+          const btnGoScales = document.querySelector(".go-to-scales");
+          if (btnGoScales) {
+            btnGoScales.addEventListener("click", (e) => {
+              e.preventDefault();
               router.push("/scales");
+            });
+          }
+
+          const btnGoCharts = document.querySelector(".go-to-charts");
+          if (btnGoCharts) {
+            btnGoCharts.addEventListener("click", (e) => {
+              e.preventDefault();
+              router.push(`/scales/${scale.scale_id}`);
             });
           }
         }, 0);
       });
     });
-  }, [mapLoaded, scales]);
+  }, [mapLoaded, scales, t, lang, router]);
 
   // 🧱 Render the map container div
   return <div ref={mapRef} className="w-full h-full" />;

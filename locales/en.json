@@ -38,5 +38,64 @@
   "admin.placeholder.latitude": "Enter latitude...",
   "admin.placeholder.longitude": "Enter longitude...",
   "admin.cancel": "Cancel",
-  "admin.save": "Save"
+  "admin.save": "Save",
+ 
+  "manual.dataSync.title": "Data & Sync",
+  "manual.dataSync.p1": "Data is saved on a schedule via cron jobs that pull from the API into the database for daily and hourly aggregates.",
+  "manual.dataSync.li1": "Charts and lists read from these stored aggregates.",
+  "manual.dataSync.li2": "If a time window looks empty, the device may have been offline or the job delayed — try a refresh and check device status.",
+
+  "manual.overview.title": "Overview",
+  "manual.overview.p1": "This manual explains each page in the Beehives app and where to find controls for time ranges, metrics, downloads, and navigation.",
+  "manual.overview.li1": "Works on mobile & desktop",
+  "manual.overview.li2": "Open/close via the “Manual” button (or ESC)",
+  "manual.overview.li3": "Use the search box to jump to any section",
+
+  "manual.scales.title": "Scales (List)",
+  "manual.scales.p1": "The Scales page lists every scale. Use the buttons on each card to quickly view aggregated data or jump to charts.",
+  "manual.scales.li1": "Daily / Hourly buttons: open views showing daily or hourly data (aggregations).",
+  "manual.scales.li2": "Go to Charts: opens the specific scale’s chart view, focused on that scale.",
+  "manual.scales.li3": "Downloads (Admin only): if you’re logged in as an admin, you’ll see a button to download .csv for all data.",
+
+  "manual.scaleDetail.title": "Scale – Chart View",
+  "manual.scaleDetail.p1": "Visualize data for a single scale with full control over metric and time range. Ideal for deep dives.",
+  "manual.scaleDetail.li1": "Metric picker: choose the metric (e.g., weight, temperature, etc.).",
+  "manual.scaleDetail.li2": "Scale picker: switch to another scale without leaving the page.",
+  "manual.scaleDetail.li3": "Date range controls: pick exact dates or use quick ranges (24h / 7d / 30d / weekly / monthly).",
+  "manual.scaleDetail.li4": "Rapid navigation: jump backward/forward by the current window size (e.g., ±1 week or ±1 month).",
+  "manual.scaleDetail.li5": "Download (signed-in users): export a .csv of the current chart view (respects selected scale, metric, and time window).",
+
+  "manual.weightCharts.title": "Weight-Charts (Multi)",
+  "manual.weightCharts.p1": "Compare multiple scales in one place with flexible layouts and quick time filters.",
+  "manual.weightCharts.li1": "Control panel: choose scales, time range, and preset time buttons (7d / 30d / 90d, etc.).",
+  "manual.weightCharts.li2": "Layout: toggle between one multi-chart (overlaid series) or small multiples (one chart per scale).",
+  "manual.weightCharts.li3": "Legend: click legend items to show/hide individual series.",
+
+  "manual.maps.title": "Maps",
+  "manual.maps.p1": "See each scale on the map. Click a marker to preview the last day’s key data and navigate quickly.",
+  "manual.maps.li1": "Marker popup: shows last-day data for that scale.",
+  "manual.maps.li2": "Links: “Go to Scale” (opens the scale page) and “Open Current Chart” (opens the chart view focused on that scale & time).",
+
+  "manual.admin.title": "Admin",
+  "manual.admin.p1": "Available only to admin users. Manage scales and data directly from the database utilities.",
+  "manual.admin.li1": "Data controls: tools for reviewing, importing, fixing, or deleting records (where exposed by the UI).",
+
+  "manual.panelTitle": "Beehives Manual",
+  "manual.searchPlaceholder": "Search sections…",
+  "manual.hide": "Hide",
+  "manual.close": "Close manual",
+
+  "maps.loading": "Loading map...",
+  "maps.scaleId": "Scale ID",
+  "maps.date": "Date",
+  "maps.weight": "Weight",
+  "maps.yield": "Yield",
+  "maps.temp": "Temp",
+  "maps.brood": "Brood",
+  "maps.humidity": "Humidity",
+  "maps.na": "N/A",
+  "maps.noRecent": "No recent data available.",
+  "maps.gotoScales": "Go to Scales",
+  "maps.chartsLink": "charts"
 }
+
