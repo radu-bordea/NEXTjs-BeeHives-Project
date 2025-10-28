@@ -38,6 +38,63 @@
   "admin.placeholder.latitude": "Ange latitud...",
   "admin.placeholder.longitude": "Ange longitud...",
   "admin.cancel": "Avbryt",
-  "admin.save": "Spara"
+  "admin.save": "Spara",
 
+  "manual.dataSync.title": "Data & Synk",
+  "manual.dataSync.p1": "Data sparas schemalagt via cron-jobb som hämtar från API:t till databasen som dagliga och timvisa aggregeringar.",
+  "manual.dataSync.li1": "Diagram och listor läser från dessa sparade aggregeringar.",
+  "manual.dataSync.li2": "Om ett tidsintervall ser tomt ut kan enheten ha varit offline eller jobbet försenat — testa att uppdatera och kontrollera enhetens status.",
+
+  "manual.overview.title": "Översikt",
+  "manual.overview.p1": "Den här handboken beskriver varje sida i bikupsappen och var du hittar tidskontroller, mätval, nedladdningar och navigering.",
+  "manual.overview.li1": "Fungerar på mobil och dator",
+  "manual.overview.li2": "Öppna/stäng via knappen ”Handbok” (eller ESC)",
+  "manual.overview.li3": "Använd sökfältet för att hoppa till valfri sektion",
+
+  "manual.scales.title": "Vågar (Lista)",
+  "manual.scales.p1": "Sidan Vågar listar varje våg. Använd knapparna på varje kort för att snabbt se aggregerad data eller gå till diagram.",
+  "manual.scales.li1": "Daglig / Timvis: öppnar vyer som visar dagliga eller timvisa aggregeringar.",
+  "manual.scales.li2": "Gå till Diagram: öppnar den specifika vågens diagramvy.",
+  "manual.scales.li3": "Nedladdning (endast admin): om du är inloggad som admin ser du en knapp för att ladda ner .csv för all data.",
+
+  "manual.scaleDetail.title": "Våg – Diagramvy",
+  "manual.scaleDetail.p1": "Visualisera data för en enskild våg med full kontroll över mätare och tidsintervall. Bra för djupanalys.",
+  "manual.scaleDetail.li1": "Mätväljare: välj mätvärde (t.ex. vikt, temperatur osv.).",
+  "manual.scaleDetail.li2": "Vågväljare: byt till en annan våg utan att lämna sidan.",
+  "manual.scaleDetail.li3": "Tidsintervall: välj exakta datum eller snabbval (24h / 7d / 30d / veckovis / månadsvis).",
+  "manual.scaleDetail.li4": "Snabbnavigering: hoppa bakåt/framåt med nuvarande fönsterstorlek (t.ex. ±1 vecka eller ±1 månad).",
+  "manual.scaleDetail.li5": "Nedladdning (inloggade användare): exportera en .csv av den aktuella diagramvyn (respektive vald våg, mätare och tidsfönster).",
+
+  "manual.weightCharts.title": "Vikt-diagram (Multi)",
+  "manual.weightCharts.p1": "Jämför flera vågar på samma plats med flexibla layouter och snabba tidsfilter.",
+  "manual.weightCharts.li1": "Kontrollpanel: välj vågar, tidsintervall och snabbknappar (7d / 30d / 90d, osv.).",
+  "manual.weightCharts.li2": "Layout: växla mellan ett gemensamt diagram (överlagrade serier) eller små multiplar (ett diagram per våg).",
+  "manual.weightCharts.li3": "Förklaring: klicka på poster i legenden för att visa/dölja serier.",
+
+  "manual.maps.title": "Karta",
+  "manual.maps.p1": "Se varje våg på kartan. Klicka på en markör för att förhandsgranska det senaste dygnets nyckeldata och navigera snabbt.",
+  "manual.maps.li1": "Markör-popup: visar senaste dygnets data för den vågen.",
+  "manual.maps.li2": "Länkar: ”Gå till våg” (öppnar vågsidan) och ”Öppna aktuellt diagram” (öppnar diagramvyn för den vågen och tidsperioden).",
+
+  "manual.admin.title": "Admin",
+  "manual.admin.p1": "Endast för administratörer. Hantera vågar och data direkt via verktygen.",
+  "manual.admin.li1": "Dataverktyg: granska, importera, rätta eller radera poster (där funktionen finns i UI:t).",
+
+  "manual.panelTitle": "Handbok för bikupor",
+  "manual.searchPlaceholder": "Sök sektioner…",
+  "manual.hide": "Dölj",
+  "manual.close": "Stäng handbok",
+
+  "maps.loading": "Laddar karta...",
+  "maps.scaleId": "Våg ID",
+  "maps.date": "Datum",
+  "maps.weight": "Vikt",
+  "maps.yield": "Nektarintag",
+  "maps.temp": "Temp",
+  "maps.brood": "Yngel",
+  "maps.humidity": "Luftfuktighet",
+  "maps.na": "Saknas",
+  "maps.noRecent": "Inga färska data tillgängliga.",
+  "maps.gotoScales": "Gå till vågar",
+  "maps.chartsLink": "diagram"
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLang } from "./LanguageProvider";
 
 export default function ManualPanel({
   sections,
@@ -10,6 +11,9 @@ export default function ManualPanel({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const panelRef = useRef(null);
+
+  // translation
+  const { t } = useLang();
 
   useEffect(() => {
     const onOpen = () => setOpen(true);
@@ -83,18 +87,20 @@ export default function ManualPanel({
             : "-translate-x-full"
         }`}
       >
+        {/* Header row */}
         <div
           className="flex items-center justify-between p-4 border-b"
           style={{ borderColor: "var(--border)" }}
         >
           <h2 id="manual-title" className="text-lg font-semibold">
-            {title}
+            {title /* we'll pass translated title in layout */}
           </h2>
           <button
             onClick={() => setOpen(false)}
             className="rounded-full p-2 hover:opacity-80"
-            aria-label="Close manual"
+            aria-label={t("manual.close") || "Close manual"}
           >
+            {/* X icon */}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -110,12 +116,14 @@ export default function ManualPanel({
           </button>
         </div>
 
+        {/* Body */}
         <div className="p-4 space-y-4 overflow-y-auto h-[calc(100%-64px)]">
+          {/* Search + Hide row */}
           <div className="flex gap-2">
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search sections…"
+              placeholder={t("manual.searchPlaceholder") || "Search sections…"}
               className="w-full rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-400"
               style={{ border: `1px solid var(--border)` }}
             />
@@ -124,7 +132,7 @@ export default function ManualPanel({
               className="rounded-lg px-3 py-2"
               style={{ border: `1px solid var(--border)` }}
             >
-              Hide
+              {t("manual.hide") || "Hide"}
             </button>
           </div>
 
@@ -157,7 +165,7 @@ export default function ManualPanel({
             </ul>
           </nav>
 
-          {/* Content */}
+          {/* Content sections */}
           <div className="space-y-6">
             {filtered.map((s) => (
               <section key={s.id} id={`manual-${s.id}`}>
