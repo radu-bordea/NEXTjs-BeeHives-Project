@@ -13,6 +13,9 @@
 - npm i html-to-image
 - npm install html2canvas
 - npm install html-to-image
+- npm install next-intl
+
+
 
 
 

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useLang } from "../components/LanguageProvider";
 
-const AdminPage = () => {
+export default function AdminPage() {
   const [scales, setScales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedScale, setSelectedScale] = useState(null);
@@ -11,6 +12,8 @@ const AdminPage = () => {
   const [longitude, setLongitude] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const { t } = useLang();
 
   // Fetch scales from backend
   const fetchScales = async () => {
@@ -54,9 +57,7 @@ const AdminPage = () => {
       !isValidCoordinate(latitude, -90, 90) ||
       !isValidCoordinate(longitude, -180, 180)
     ) {
-      setErrorMessage(
-        "❌ Please enter a valid latitude (-90 to 90) and longitude (-180 to 180)."
-      );
+      setErrorMessage(t("admin.error.invalidCoordinates"));
       return;
     }
 
@@ -90,20 +91,20 @@ const AdminPage = () => {
 
   return (
     <div className="p-6 text-gray-500">
-      <h1 className="text-2xl font-bold mb-6">🔧 Admin Page – Manage Scales</h1>
+      <h1 className="text-2xl font-bold mb-6">🔧 {t("admin.title")}</h1>
 
       {loading ? (
-        <p>Loading scales...</p>
+        <p>{t("admin.loading")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full border border-gray-300 rounded-md">
             <thead className="dark:bg-gray-800 text-gray-400 text-left">
               <tr>
-                <th className="px-4 py-2 border">Serial Number</th>
-                <th className="px-4 py-2 border">Name</th>
-                <th className="px-4 py-2 border">Latitude</th>
-                <th className="px-4 py-2 border">Longitude</th>
-                <th className="px-4 py-2 border">Actions</th>
+                <th className="px-4 py-2 border">{t("admin.serialNumber")}</th>
+                <th className="px-4 py-2 border">{t("admin.name")}</th>
+                <th className="px-4 py-2 border">{t("admin.latitude")}</th>
+                <th className="px-4 py-2 border">{t("admin.longitude")}</th>
+                <th className="px-4 py-2 border">{t("admin.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -114,17 +115,23 @@ const AdminPage = () => {
                   </td>
                   <td className="px-4 py-2 border dark:text-gray-400">
                     {scale.name || (
-                      <span className="text-red-300 italic">No name</span>
+                      <span className="text-red-300 italic">
+                        {t("admin.noName")}
+                      </span>
                     )}
                   </td>
                   <td className="px-4 py-2 border dark:text-gray-400">
                     {scale.latitude || (
-                      <span className="text-red-300 italic">No lat</span>
+                      <span className="text-red-300 italic">
+                        {t("admin.noLat")}
+                      </span>
                     )}
                   </td>
                   <td className="px-4 py-2 border dark:text-gray-400">
                     {scale.longitude || (
-                      <span className="text-red-300 italic">No long</span>
+                      <span className="text-red-300 italic">
+                        {t("admin.noLong")}
+                      </span>
                     )}
                   </td>
                   <td className="px-4 py-2 border">
@@ -132,7 +139,7 @@ const AdminPage = () => {
                       onClick={() => openModal(scale)}
                       className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center whitespace-nowrap min-w-[80px]"
                     >
-                      ✏️ Edit
+                      ✏️ {t("admin.edit")}
                     </button>
                   </td>
                 </tr>
@@ -147,7 +154,7 @@ const AdminPage = () => {
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
             <h2 className="text-lg font-bold mb-4">
-              Edit Scale – ID:{" "}
+              {t("admin.editScale")} – ID:{" "}
               <span className="text-blue-600">{selectedScale.scale_id}</span>
             </h2>
 
@@ -160,7 +167,7 @@ const AdminPage = () => {
             <input
               type="text"
               className="w-full border px-4 py-2 rounded mb-4"
-              placeholder="Enter name..."
+              placeholder={t("admin.placeholder.name")}
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
             />
@@ -168,7 +175,7 @@ const AdminPage = () => {
             <input
               type="text"
               className="w-full border px-4 py-2 rounded mb-4"
-              placeholder="Enter latitude..."
+              placeholder={t("admin.placeholder.latitude")}
               value={latitude}
               onChange={(e) => setLatitude(e.target.value)}
             />
@@ -176,7 +183,7 @@ const AdminPage = () => {
             <input
               type="text"
               className="w-full border px-4 py-2 rounded mb-4"
-              placeholder="Enter longitude..."
+              placeholder={t("admin.placeholder.longitude")}
               value={longitude}
               onChange={(e) => setLongitude(e.target.value)}
             />
@@ -186,13 +193,13 @@ const AdminPage = () => {
                 onClick={() => setModalOpen(false)}
                 className="px-4 py-2 bg-gray-300 text-black rounded hover:bg-gray-400"
               >
-                Cancel
+                {t("admin.cancel")}
               </button>
               <button
                 onClick={handleSave}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
-                Save
+                {t("admin.save")}
               </button>
             </div>
           </div>
@@ -200,6 +207,4 @@ const AdminPage = () => {
       )}
     </div>
   );
-};
-
-export default AdminPage;
+}

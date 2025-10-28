@@ -1,0 +1,42 @@
+{
+  "about.title": "About the Beehive Data Project",
+  "about.p1": "The BiData project is funded by the European Agricultural Fund for Rural Development (EAFRD) and runs from 1.11.2023 to 31.10.2025. The project aims to create a common platform for automated data collection from beehives in Åland, a collaboration between the University of Åland and partners in Åland agriculture.",
+  "about.p2": "The goal of the project is to create conditions for reduced winter losses of bee colonies, improved honey harvest, and optimized pollination of crops such as apples.",
+  "about.p3": "Through a network of connected hive scales with temperature sensors, connected to a public platform for data visualization (bidata.site), beekeepers can see developments in different hives without physically visiting hives. This way they can create a good basis for actions in beekeeping.",
+
+  "layout.title": "BeeHives Project",
+  "layout.description": "Check evolution of beehives data",
+  "layout.keywords": "scales, production, measurements",
+
+  "nav.home": "Home",
+  "nav.scales": "Scales",
+  "nav.weightCharts": "Weight Charts",
+  "nav.maps": "Maps",
+  "nav.admin": "Admin",
+  "nav.manual": "Manual",
+  "nav.login": "Login",
+  "nav.logout": "Logout",
+  "nav.language": "Language",
+
+  "navbar.lang.sv": "Swedish",
+  "navbar.lang.en": "English",
+
+  "admin.title": "Admin Page – Manage Scales",
+  "admin.loading": "Loading scales...",
+  "admin.serialNumber": "Serial Number",
+  "admin.name": "Name",
+  "admin.latitude": "Latitude",
+  "admin.longitude": "Longitude",
+  "admin.actions": "Actions",
+  "admin.noName": "No name",
+  "admin.noLat": "No latitude",
+  "admin.noLong": "No longitude",
+  "admin.edit": "Edit",
+  "admin.editScale": "Edit Scale",
+  "admin.error.invalidCoordinates": "❌ Please enter a valid latitude (-90 to 90) and longitude (-180 to 180).",
+  "admin.placeholder.name": "Enter name...",
+  "admin.placeholder.latitude": "Enter latitude...",
+  "admin.placeholder.longitude": "Enter longitude...",
+  "admin.cancel": "Cancel",
+  "admin.save": "Save"
+}
