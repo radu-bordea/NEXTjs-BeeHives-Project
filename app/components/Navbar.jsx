@@ -1,4 +1,3 @@
-// app/components/Navbar.jsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -6,25 +5,24 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { AiOutlineDown, AiOutlineUp, AiOutlineClose } from "react-icons/ai";
-import ThemeToggle from "./ThemeToggle"; // <- renamed to ThemeToggle for clarity
+import ThemeToggle from "./ThemeToggle";
 import { signIn, signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import { ManualButton } from "./ManualButton";
 
-
-const fullNavItems = [
-  { label: "Home", path: "/" },
-  { label: "Scales", path: "/scales" },
-  { label: "Weight-Charts", path: "/weight-charts" },
-  { label: "Maps", path: "/maps" },
-  { label: "Admin", path: "/admin", protected: true },
-];
+// 👇 import translations
+import { useLang } from "./LanguageProvider";
 
 export default function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
+
+  // translation context
+  const { t, lang, setLang } = useLang();
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
 
   const isActive = (path) => pathname === path;
   const toggleMobileMenu = () => setIsMobileMenuOpen((p) => !p);
@@ -37,6 +35,15 @@ export default function Navbar() {
     if (isMobileMenuOpen) document.addEventListener("keydown", onEsc);
     return () => document.removeEventListener("keydown", onEsc);
   }, [isMobileMenuOpen]);
+
+  // nav items now use translation keys
+  const fullNavItems = [
+    { labelKey: "nav.home", path: "/" },
+    { labelKey: "nav.scales", path: "/scales" },
+    { labelKey: "nav.weightCharts", path: "/weight-charts" },
+    { labelKey: "nav.maps", path: "/maps" },
+    { labelKey: "nav.admin", path: "/admin", protected: true },
+  ];
 
   const navItems = useMemo(
     () =>
@@ -64,7 +71,7 @@ export default function Navbar() {
             <span className="relative w-10 h-10">
               <Image
                 src="/assets/images/eulogo.png"
-                alt="Logo"
+                alt="EU Logo"
                 fill
                 className="object-contain"
                 priority
@@ -72,38 +79,25 @@ export default function Navbar() {
             </span>
           </Link>
 
-          <Link href="/" className="flex items-center gap-2 border-1 bg-black rounded-full p-0.5">
+          <Link
+            href="/"
+            className="flex items-center gap-2 border-1 bg-black rounded-full p-0.5"
+          >
             <span className="relative w-5 h-5">
               <Image
                 src="/assets/images/halogo.png"
-                alt="Logo"
+                alt="HA Logo"
                 fill
                 className="object-contain"
                 priority
               />
             </span>
           </Link>
-        </div>
-
-        {/* Mobile: Manual + Hamburger */}
-        <div className="md:hidden flex items-center gap-3">
-          <ManualButton label="Manual" />
-          <button
-            onClick={toggleMobileMenu}
-            className="opacity-70 supports-[hover:hover]:hover:opacity-100 focus:outline-none"
-            aria-label="Toggle menu"
-          >
-            {isMobileMenuOpen ? (
-              <AiOutlineClose size={24} />
-            ) : (
-              <GiHamburgerMenu size={24} />
-            )}
-          </button>
         </div>
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-6">
-          {navItems.map(({ path, label }) => (
+          {navItems.map(({ path, labelKey }) => (
             <Link
               key={path}
               href={path}
@@ -116,18 +110,68 @@ export default function Navbar() {
                 }
               `}
             >
-              {label}
+              {t(labelKey)}
             </Link>
           ))}
 
-          <ManualButton label="Manual" />
+          {/* Manual button text also translated */}
+          <ManualButton label={t("nav.manual")} />
 
+          {/* Language Switcher */}
+          <div className="relative">
+            <button
+              onClick={() => setIsLangMenuOpen((p) => !p)}
+              className="flex items-center gap-2 text-sm px-2 py-1 rounded border border-[color:var(--border)] opacity-80 supports-[hover:hover]:hover:opacity-100"
+            >
+              {lang === "sv" ? "SV" : "EN"}
+              {isLangMenuOpen ? (
+                <AiOutlineUp className="w-4 h-4" />
+              ) : (
+                <AiOutlineDown className="w-4 h-4" />
+              )}
+            </button>
+
+            {isLangMenuOpen && (
+              <div
+                className="
+                  absolute right-0 mt-2 w-32 rounded-lg shadow-lg z-50
+                  bg-[color:var(--card)]
+                  border border-[color:var(--border)]
+                "
+              >
+                <button
+                  onClick={() => {
+                    setLang("sv");
+                    setIsLangMenuOpen(false);
+                  }}
+                  className={`block w-full text-left px-3 py-2 text-sm supports-[hover:hover]:hover:opacity-90 ${
+                    lang === "sv" ? "font-semibold" : ""
+                  }`}
+                >
+                  {t("navbar.lang.sv")}
+                </button>
+                <button
+                  onClick={() => {
+                    setLang("en");
+                    setIsLangMenuOpen(false);
+                  }}
+                  className={`block w-full text-left px-3 py-2 text-sm supports-[hover:hover]:hover:opacity-90 ${
+                    lang === "en" ? "font-semibold" : ""
+                  }`}
+                >
+                  {t("navbar.lang.en")}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Auth: login/logout */}
           {!session ? (
             <button
               onClick={() => signIn("google")}
               className="transition opacity-80 supports-[hover:hover]:hover:opacity-100"
             >
-              Login
+              {t("nav.login")}
             </button>
           ) : (
             <div className="relative">
@@ -167,12 +211,28 @@ export default function Navbar() {
                     }}
                     className="block w-full text-left px-3 py-2 text-sm text-red-500 supports-[hover:hover]:hover:opacity-90"
                   >
-                    Logout
+                    {t("nav.logout")}
                   </button>
                 </div>
               )}
             </div>
           )}
+        </div>
+
+        {/* Mobile: Manual + Hamburger */}
+        <div className="md:hidden flex items-center gap-3">
+          <ManualButton label={t("nav.manual")} />
+          <button
+            onClick={toggleMobileMenu}
+            className="opacity-70 supports-[hover:hover]:hover:opacity-100 focus:outline-none"
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? (
+              <AiOutlineClose size={24} />
+            ) : (
+              <GiHamburgerMenu size={24} />
+            )}
+          </button>
         </div>
       </div>
 
@@ -186,7 +246,34 @@ export default function Navbar() {
         `}
       >
         <div className="flex flex-col p-4 gap-4">
-          {navItems.map(({ path, label }) => (
+          {/* language picker at top for mobile */}
+          <div className="flex gap-2 items-center">
+            <span className="text-xs uppercase opacity-60">
+              {t("nav.language")}
+            </span>
+            <button
+              onClick={() => setLang("sv")}
+              className={`px-2 py-1 rounded border text-sm ${
+                lang === "sv"
+                  ? "font-semibold border-blue-500 text-blue-500"
+                  : "opacity-80 border-[color:var(--border)]"
+              }`}
+            >
+              {t("navbar.lang.sv")}
+            </button>
+            <button
+              onClick={() => setLang("en")}
+              className={`px-2 py-1 rounded border text-sm ${
+                lang === "en"
+                  ? "font-semibold border-blue-500 text-blue-500"
+                  : "opacity-80 border-[color:var(--border)]"
+              }`}
+            >
+              {t("navbar.lang.en")}
+            </button>
+          </div>
+
+          {navItems.map(({ path, labelKey }) => (
             <Link
               key={path}
               href={path}
@@ -200,7 +287,7 @@ export default function Navbar() {
               `}
               onClick={closeMenu}
             >
-              {label}
+              {t(labelKey)}
             </Link>
           ))}
 
@@ -212,7 +299,7 @@ export default function Navbar() {
               }}
               className="text-lg text-left transition opacity-90 supports-[hover:hover]:hover:opacity-100"
             >
-              Login
+              {t("nav.login")}
             </button>
           ) : (
             <div className="flex items-center gap-3">
@@ -233,7 +320,7 @@ export default function Navbar() {
                 }}
                 className="text-lg text-left text-red-500 supports-[hover:hover]:hover:opacity-90"
               >
-                Logout
+                {t("nav.logout")}
               </button>
             </div>
           )}

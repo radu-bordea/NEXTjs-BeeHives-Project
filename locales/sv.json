@@ -1,0 +1,43 @@
+{
+  "about.title": "Om BiData-projektet",
+  "about.p1": "BiData-projektet finansieras av Europeiska jordbruksfonden för landsbygdsutveckling (EJFLU) och pågår från 1.11.2023 till 31.10.2025. Projektets mål är att skapa en gemensam plattform för automatiserad datainsamling från bikupor på Åland, i samarbete mellan Högskolan på Åland och aktörer inom åländskt jordbruk.",
+  "about.p2": "Syftet är att minska vinterförluster av bisamhällen, förbättra honungsskörden och optimera pollinering av grödor som till exempel äpplen.",
+  "about.p3": "Genom ett nätverk av uppkopplade bikupvågar med temperatursensorer, kopplade till en öppen plattform för datavisualisering (bidata.site), kan biodlare följa utvecklingen i olika kupor utan att fysiskt besöka dem. Det ger ett bättre underlag för rätt åtgärder i rätt tid.",
+
+  "layout.title": "Bikup-projektet",
+  "layout.description": "Övervaka utvecklingen i bikuporna",
+  "layout.keywords": "vågar, produktion, mätdata",
+
+  "nav.home": "Hem",
+  "nav.scales": "Vågar",
+  "nav.weightCharts": "Vikt-grafer",
+  "nav.maps": "Kartor",
+  "nav.admin": "Admin",
+  "nav.manual": "Manual",
+  "nav.login": "Logga in",
+  "nav.logout": "Logga ut",
+  "nav.language": "Språk",
+
+  "navbar.lang.sv": "Svenska",
+  "navbar.lang.en": "Engelska",
+
+  "admin.title": "Admin-sida – Hantera vågar",
+  "admin.loading": "Laddar vågar...",
+  "admin.serialNumber": "Serienummer",
+  "admin.name": "Namn",
+  "admin.latitude": "Latitud",
+  "admin.longitude": "Longitud",
+  "admin.actions": "Åtgärder",
+  "admin.noName": "Inget namn",
+  "admin.noLat": "Ingen latitud",
+  "admin.noLong": "Ingen longitud",
+  "admin.edit": "Redigera",
+  "admin.editScale": "Redigera våg",
+  "admin.error.invalidCoordinates": "❌ Ange en giltig latitud (-90 till 90) och longitud (-180 till 180).",
+  "admin.placeholder.name": "Ange namn...",
+  "admin.placeholder.latitude": "Ange latitud...",
+  "admin.placeholder.longitude": "Ange longitud...",
+  "admin.cancel": "Avbryt",
+  "admin.save": "Spara"
+
+}
