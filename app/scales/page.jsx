@@ -8,50 +8,48 @@ import ScaleCard from "../components/ScaleCard";
 import Table from "../components/Table";
 import getPageRange from "@/utils/paginationRange";
 import { useSession } from "next-auth/react";
+import { useLang } from "../components/LanguageProvider";
 
 export default function ScalesPage() {
-  // --- State setup ---
-  const [scales, setScales] = useState([]); // list of all scales
-  const [loading, setLoading] = useState(true); // page loading
-  const [loadTableData, setLoadTableData] = useState(false); // show table loading
-  const [syncing, setSyncing] = useState(false); // sync all scales
-  const [perScaleSyncing, setPerScaleSyncing] = useState({}); // syncing individual scale
-  const [selectedScale, setSelectedScale] = useState(null); // scale selected for table
-  const [selectedResolution, setSelectedResolution] = useState("daily"); // current resolution
-  const [scaleDataHourly, setScaleDataHourly] = useState(null); // hourly data
-  const [scaleDataDaily, setScaleDataDaily] = useState(null); // daily data
-  const [error, setError] = useState(null); // error message
-  const [currentPage, setCurrentPage] = useState(1); // current page number
-  const rowsPerPage = 15; // max rows per page
-  const router = useRouter();
-  const { data: session, status } = useSession(); // current user session
+  const { t } = useLang();
 
-  // abort controller for in-flight data fetches
+  // --- State setup ---
+  const [scales, setScales] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadTableData, setLoadTableData] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [perScaleSyncing, setPerScaleSyncing] = useState({});
+  const [selectedScale, setSelectedScale] = useState(null);
+  const [selectedResolution, setSelectedResolution] = useState("daily");
+  const [scaleDataHourly, setScaleDataHourly] = useState(null);
+  const [scaleDataDaily, setScaleDataDaily] = useState(null);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 15;
+  const router = useRouter();
+  const { data: session, status } = useSession();
+
   const controllerRef = useRef(null);
 
-  // Choose the correct data depending on resolution
   const fullData =
     selectedResolution === "hourly" ? scaleDataHourly : scaleDataDaily;
 
-  // ✅ Sort the entire dataset (latest first) WITHOUT mutating original
   const sortedFullData = Array.isArray(fullData)
     ? [...fullData].sort((a, b) => {
         const at = new Date(a?.time).getTime();
         const bt = new Date(b?.time).getTime();
         if (Number.isNaN(at) && Number.isNaN(bt)) return 0;
-        if (Number.isNaN(at)) return 1; // invalid/missing dates go last
+        if (Number.isNaN(at)) return 1;
         if (Number.isNaN(bt)) return -1;
-        return bt - at; // latest first
+        return bt - at;
       })
     : null;
 
-  // ✅ Paginate AFTER sorting
   const paginatedData = sortedFullData?.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
 
-  // ✅ Total pages from sorted data length
   const totalPages = sortedFullData
     ? Math.ceil(sortedFullData.length / rowsPerPage)
     : 0;
@@ -82,28 +80,25 @@ export default function ScalesPage() {
       setScales(data.scales || []);
     } catch (err) {
       console.error("❌ Error loading scales:", err);
-      setError("Failed to load scales.");
+      setError(t("scalesPage.loadErrorScales"));
     } finally {
       setLoading(false);
     }
   };
 
-  // --- Load scale data for hourly/daily (Option A: manages its own loader) ---
+  // --- Load scale data (hourly/daily) ---
   const fetchScaleData = async (scaleId, resolution = "daily") => {
-    // start loader
     setLoadTableData(true);
 
-    // cancel any in-flight request
     if (controllerRef.current) controllerRef.current.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
 
-    // reset/prepare state
     setSelectedResolution(resolution);
     setScaleDataHourly(null);
     setScaleDataDaily(null);
     setError(null);
-    setCurrentPage(1); // reset pagination
+    setCurrentPage(1);
 
     try {
       const res = await fetch(
@@ -124,7 +119,6 @@ export default function ScalesPage() {
       }
     } catch (err) {
       if (err?.name === "AbortError") {
-        // aborted because a newer request started; don't touch state further
         return;
       }
       console.warn("⚠️ Full data missing, trying preview...");
@@ -142,27 +136,25 @@ export default function ScalesPage() {
       } catch (fallbackErr) {
         if (fallbackErr?.name === "AbortError") return;
         console.error("❌ Fallback failed:", fallbackErr);
-        setError("Failed to load any data for this scale.");
+        setError(t("scalesPage.loadErrorData"));
       }
     } finally {
-      // Only clear loader if this is still the active request
       if (controllerRef.current === controller) {
         setLoadTableData(false);
       }
     }
   };
 
-  // When a scale card is clicked
+  // When clicking "View Data" on a card
   const handleData = (id) => {
     const scale = scales.find((s) => s.scale_id === id);
     if (scale) {
       setSelectedScale(scale);
-      // keep current resolution when switching scales
       fetchScaleData(id, selectedResolution);
     }
   };
 
-  // Sync all scales from external API
+  // Sync all scales (admin only)
   const syncScales = async () => {
     setSyncing(true);
     try {
@@ -178,7 +170,7 @@ export default function ScalesPage() {
         setScales(freshScales);
         setLoading(false);
 
-        // Trigger data load for each scale
+        // Fire sync for each individual scale
         freshScales.forEach(async (scale) => {
           setPerScaleSyncing((prev) => ({
             ...prev,
@@ -199,11 +191,11 @@ export default function ScalesPage() {
           }
         });
       } else {
-        setError(`Sync failed: ${data.error}`);
+        setError(`${t("scalesPage.syncFailed")}: ${data.error}`);
       }
     } catch (err) {
       console.error("❌ Sync error:", err);
-      setError("Sync failed due to an internal error.");
+      setError(t("scalesPage.syncInternalError"));
     } finally {
       setSyncing(false);
     }
@@ -211,9 +203,10 @@ export default function ScalesPage() {
 
   useEffect(() => {
     fetchScales();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --- Pagination controls renderer ---
+  // Pagination controls
   const renderPagination = () =>
     totalPages > 1 && (
       <div className="flex justify-center mt-4 space-x-1 flex-wrap">
@@ -222,7 +215,7 @@ export default function ScalesPage() {
           disabled={currentPage === 1}
           className="px-3 py-1 border rounded disabled:opacity-50"
         >
-          Prev
+          {t("pagination.prev")}
         </button>
 
         {getPageRange(currentPage, totalPages, 2).map((item, index) => (
@@ -241,11 +234,13 @@ export default function ScalesPage() {
         ))}
 
         <button
-          onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+          onClick={() =>
+            setCurrentPage((p) => Math.min(p + 1, totalPages))
+          }
           disabled={currentPage === totalPages}
           className="px-3 py-1 border rounded disabled:opacity-50"
         >
-          Next
+          {t("pagination.next")}
         </button>
       </div>
     );
@@ -253,20 +248,23 @@ export default function ScalesPage() {
   return (
     <div className="relative p-6">
       {syncing && <Spinner />}
-      <h1 className="text-2xl font-bold mb-4">🐝 Beehive Scales</h1>
 
-      {/* Sync button (only for admins) */}
+      <h1 className="text-2xl font-bold mb-4">
+        🐝 {t("scalesPage.title")}
+      </h1>
+
+      {/* Sync button (admin only) */}
       {status === "authenticated" && session?.user?.isAdmin && (
         <button
           onClick={syncScales}
           disabled={syncing}
           className="mb-6 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-500 transition disabled:opacity-50"
         >
-          {syncing ? "Syncing..." : "🔄 Sync Scales from API"}
+          {syncing ? t("scalesPage.syncing") : t("scalesPage.syncButton")}
         </button>
       )}
 
-      {/* Show scale cards or loading spinner */}
+      {/* Cards or spinner */}
       {loading ? (
         <Spinner />
       ) : (
@@ -286,7 +284,7 @@ export default function ScalesPage() {
         </div>
       )}
 
-      {/* Table with paginated data */}
+      {/* Data table */}
       {paginatedData && !loadTableData && (
         <>
           {selectedScale &&
@@ -301,7 +299,9 @@ export default function ScalesPage() {
                     selectedResolution
                   )}&format=csv`}
                 >
-                  ⬇️ Download CSV - selected scale ({selectedResolution})
+                  ⬇️ {t("scalesPage.downloadCsv", {
+                    resolution: selectedResolution,
+                  })}
                 </a>
               </div>
             )}
@@ -319,7 +319,7 @@ export default function ScalesPage() {
       )}
 
       {/* Table loader */}
-      {loadTableData && <Loading title="Loading Table Data..." />}
+      {loadTableData && <Loading title={t("scalesPage.loadingTable")} />}
 
       {/* Error message */}
       {error && (

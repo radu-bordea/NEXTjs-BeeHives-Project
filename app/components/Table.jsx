@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useLang } from "./LanguageProvider";
 
 export default function Table({
   data,
@@ -8,6 +9,8 @@ export default function Table({
   onResolutionChange,
   scaleName,
 }) {
+  const { t, lang } = useLang();
+
   // Collect dynamic columns from the data (excluding scale_id)
   const { columns, displayLabels } = useMemo(() => {
     const keySet = new Set();
@@ -15,9 +18,9 @@ export default function Table({
     (data || []).forEach((row) => {
       if (!row) return;
       Object.keys(row).forEach((k) => {
-        if (k === "_id") return; // exclude Mongo internal id
-        if (k === "__v") return; // exclude mongoose versioning (if any)
-        if (k === "scale_id") return; // 🚫 exclude scale_id from the table
+        if (k === "_id") return;
+        if (k === "__v") return;
+        if (k === "scale_id") return;
         keySet.add(k);
       });
     });
@@ -30,45 +33,51 @@ export default function Table({
       "temperature",
       "brood",
       "humidity",
+      "rain",
+      "wind_direction",
+      "wind_speed",
     ].filter((k) => keySet.has(k));
 
-    // Everything else (alphabetical), excluding those already included
+    // Everything else (alphabetical)
     const rest = [...keySet]
       .filter((k) => !preferred.includes(k))
       .sort((a, b) => a.localeCompare(b));
 
     const cols = [...preferred, ...rest];
 
-    // Pretty labels for header
+    // Translation map for known headers
     const labelMap = {
-      time: "Time",
-      weight: "Weight",
-      yield: "Yield",
-      temperature: "Temperature",
-      brood: "Brood",
-      humidity: "Humidity",
+      time: t("table.col.time"),
+      weight: t("table.col.weight"),
+      yield: t("table.col.yield"),
+      temperature: t("table.col.temperature"),
+      brood: t("table.col.brood"),
+      humidity: t("table.col.humidity"),
+      rain: t("table.col.rain"),
+      wind_direction: t("table.col.windDirection"),
+      wind_speed: t("table.col.windSpeed"),
     };
 
     const labels = cols.map((c) => labelMap[c] || titleCase(c));
 
     return { columns: cols, displayLabels: labels };
-  }, [data]);
+  }, [data, t]);
 
   const formatCell = (key, value) => {
     if (value === null || value === undefined) return "—";
 
     if (key === "time") {
       const d = new Date(value);
-      return isNaN(d) ? String(value) : d.toLocaleString();
+      return isNaN(d)
+        ? String(value)
+        : d.toLocaleString(lang === "sv" ? "sv-SE" : "en-US");
     }
 
     if (typeof value === "number") {
-      // Show 2 decimals, adjust if you want full precision
       return (Math.round(value * 100) / 100).toFixed(2);
     }
 
     if (Array.isArray(value) || (typeof value === "object" && value !== null)) {
-      // Render objects/arrays compactly
       try {
         return JSON.stringify(value);
       } catch {
@@ -82,7 +91,7 @@ export default function Table({
   return (
     <div className="mt-4">
       <h3 className="text-xl font-semibold mb-4">
-        Data - {scaleName || "Unknown Scale"}
+        {t("table.title")} - {scaleName || t("table.unknownScale")}
       </h3>
 
       <div className="flex mb-4">
@@ -94,8 +103,9 @@ export default function Table({
               : "bg-gray-200"
           }`}
         >
-          Daily Data
+          {t("table.dailyBtn")}
         </button>
+
         <button
           onClick={() => onResolutionChange("hourly")}
           className={`px-4 py-2 rounded text-gray-500 ${
@@ -104,7 +114,7 @@ export default function Table({
               : "bg-gray-200"
           }`}
         >
-          Hourly Data
+          {t("table.hourlyBtn")}
         </button>
       </div>
 
@@ -113,7 +123,9 @@ export default function Table({
           <thead>
             <tr>
               {columns.length === 0 ? (
-                <th className="border px-4 py-2 text-left">No columns</th>
+                <th className="border px-4 py-2 text-left">
+                  {t("table.noColumns")}
+                </th>
               ) : (
                 displayLabels.map((label, i) => (
                   <th key={columns[i]} className="border px-4 py-2 text-left">
@@ -140,7 +152,7 @@ export default function Table({
                   className="border px-4 py-3 text-gray-500"
                   colSpan={columns.length || 1}
                 >
-                  No data to display
+                  {t("table.noData")}
                 </td>
               </tr>
             )}
@@ -151,7 +163,7 @@ export default function Table({
   );
 }
 
-// Small helper to prettify unknown keys into Title Case
+// fallback for unknown column headers
 function titleCase(s) {
   return String(s)
     .replace(/[_\-]+/g, " ")
