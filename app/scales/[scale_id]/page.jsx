@@ -720,7 +720,7 @@ export default function ScaleDetailPage({ params: rawParams }) {
             onClick={handleScreenshot}
             className="text-sm p-1 rounded cursor-pointer bg-red-300 hover:bg-red-400 hover:text-neutral-200 text-neutral-950"
           >
-           Snap 📸
+            Save as png 📸
           </button>
         </div>
       </div>
