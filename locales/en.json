@@ -126,7 +126,7 @@
   "scalesPage.title": "Beehive Scales",
   "scalesPage.syncButton": "🔄 Sync Scales from API",
   "scalesPage.syncing": "Syncing...",
-  "scalesPage.downloadCsv": "Download CSV - selected scale",
+  "scalesPage.downloadCsv": "Download CSV -",
   "scalesPage.loadingTable": "Loading Table Data...",
   "scalesPage.loadErrorScales": "Failed to load scales.",
   "scalesPage.loadErrorData": "Failed to load any data for this scale.",
