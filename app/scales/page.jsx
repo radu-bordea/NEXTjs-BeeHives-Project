@@ -234,9 +234,7 @@ export default function ScalesPage() {
         ))}
 
         <button
-          onClick={() =>
-            setCurrentPage((p) => Math.min(p + 1, totalPages))
-          }
+          onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
           disabled={currentPage === totalPages}
           className="px-3 py-1 border rounded disabled:opacity-50"
         >
@@ -245,13 +243,16 @@ export default function ScalesPage() {
       </div>
     );
 
+  const resLabel =
+    selectedResolution === "hourly"
+      ? t("resolution.hourly")
+      : t("resolution.daily");
+
   return (
     <div className="relative p-6">
       {syncing && <Spinner />}
 
-      <h1 className="text-2xl font-bold mb-4">
-        🐝 {t("scalesPage.title")}
-      </h1>
+      <h1 className="text-2xl font-bold mb-4">🐝 {t("scalesPage.title")}</h1>
 
       {/* Sync button (admin only) */}
       {status === "authenticated" && session?.user?.isAdmin && (
@@ -299,9 +300,7 @@ export default function ScalesPage() {
                     selectedResolution
                   )}&format=csv`}
                 >
-                  ⬇️ {t("scalesPage.downloadCsv", {
-                    resolution: selectedResolution,
-                  })}
+                  ⬇️ ⬇️ {t("scalesPage.downloadCsv")} ({resLabel})
                 </a>
               </div>
             )}
