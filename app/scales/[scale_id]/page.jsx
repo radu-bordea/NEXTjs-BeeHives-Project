@@ -19,22 +19,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useSession } from "next-auth/react";
 import * as htmlToImage from "html-to-image";
-
-// Custom DatePicker button (unchanged)
-const CustomInputButton = forwardRef(function CustomInputButton(
-  { value, onClick },
-  ref
-) {
-  return (
-    <button
-      onClick={onClick}
-      ref={ref}
-      className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl shadow transition"
-    >
-      📅 <span>{value || "Valitse päivä"} </span>
-    </button>
-  );
-});
+import { useLang } from "../../components/LanguageProvider" // ⬅️ add
 
 // ------------ helpers for dynamic metrics ------------
 const METRIC_COLOR_FALLBACKS = [
@@ -50,7 +35,6 @@ const METRIC_COLOR_FALLBACKS = [
   "#00897b",
 ];
 
-// prefer nice colors for known keys; others get a fallback
 const KNOWN_COLORS = {
   weight: "#fb8c00",
   yield: "#43a047",
@@ -62,22 +46,23 @@ const KNOWN_COLORS = {
   wind_direction: "#6d4c41",
 };
 
-// pretty labels & units by heuristic
-function prettyLabel(k) {
-  const map = {
-    time: "Time",
-    weight: "Weight (kg)",
-    temperature: "Temperature (°C)",
-    humidity: "Humidity (%)",
-    yield: "Yield (%)",
-    brood: "Brood (count)",
-    rain: "Rain (mm)",
-    wind_speed: "Wind Speed",
-    wind_direction: "Wind Direction (°)",
+// we’ll translate legend/axis labels via t()
+function prettyLabel(k, t) {
+  const keyMap = {
+    time: "metric.time",
+    weight: "metric.weight",
+    temperature: "metric.temperature",
+    humidity: "metric.humidity",
+    yield: "metric.yield",
+    brood: "metric.brood",
+    rain: "metric.rain",
+    wind_speed: "metric.wind_speed",
+    wind_direction: "metric.wind_direction",
   };
-  if (map[k]) return map[k];
-  // fallback: Title Case + no unit
-  return k
+  const i18nKey = keyMap[k];
+  if (i18nKey) return t(i18nKey);
+  // fallback: Title Case
+  return String(k)
     .replace(/[_\-]+/g, " ")
     .replace(/\s+/g, " ")
     .trim()
@@ -89,14 +74,14 @@ function inferUnit(k) {
   if (/temp|temperature/gi.test(k)) return "°C";
   if (/rain|precip/gi.test(k)) return "mm";
   if (/direction|dir/gi.test(k)) return "°";
-  return ""; // default none
+  if (/weight/gi.test(k)) return "kg";
+  return "";
 }
 
 function isNumeric(v) {
   return typeof v === "number" && Number.isFinite(v);
 }
 
-// unwrap angles to avoid 360→0 jumps (for wind_direction)
 function unwrapAngles(points, key) {
   let last = null;
   let offset = 0;
@@ -119,19 +104,17 @@ function unwrapAngles(points, key) {
   });
 }
 
-// choose chart type based on name/value pattern
 function chooseChartType(metricKey) {
-  // name hints
   if (/rain|precip|humidity/gi.test(metricKey)) return "bar";
-  // default numeric → line
   return "line";
 }
 
 export default function ScaleDetailPage({ params: rawParams }) {
-  // Unwrap params promise (Next.js)
   const params = use(rawParams);
   const { scale_id } = params;
-  const { data: session, status } = useSession(); // current user session
+  const { data: session, status } = useSession();
+
+  const { t, lang } = useLang(); // ⬅️ translations
 
   const [scales, setScales] = useState([]);
   const [chartData, setChartData] = useState([]);
@@ -139,9 +122,8 @@ export default function ScaleDetailPage({ params: rawParams }) {
 
   const [selectedResolution, setSelectedResolution] = useState("daily");
   const captureRef = useRef(null);
-  const [image, setImage] = useState(null);
 
-  // ---- timeframe & dates (unchanged) ----
+  // ---- timeframe & dates ----
   const [timeframe, setTimeframe] = useState(7);
   const now = () => new Date();
   const addDays = (date, n) => {
@@ -189,23 +171,24 @@ export default function ScaleDetailPage({ params: rawParams }) {
   };
 
   // ---------- DYNAMIC METRICS STATE ----------
-  const [activeMetric, setActiveMetric] = useState(null); // was "weight"
-  const [activeScale, setActiveScale] = useState("TJUDÖ");
+  const [activeMetric, setActiveMetric] = useState(null);
+  const [activeScale, setActiveScale] = useState("");
 
   // y-axis domain
   const [yDomain, setYDomain] = useState([0, 10]);
 
-  // formatters (keep your date formats)
+  // locale-aware x-axis formatter
   const formatDate = (value) => {
     const date = new Date(value);
+    const locale = lang === "sv" ? "sv-SE" : "en-US";
     return selectedResolution === "hourly"
-      ? date.toLocaleString("fi-FI", {
+      ? date.toLocaleString(locale, {
           day: "2-digit",
           month: "2-digit",
           hour: "2-digit",
           minute: "2-digit",
         })
-      : date.toLocaleDateString("fi-FI", {
+      : date.toLocaleDateString(locale, {
           day: "2-digit",
           month: "2-digit",
           year: "numeric",
@@ -247,7 +230,7 @@ export default function ScaleDetailPage({ params: rawParams }) {
   const hasDataForKey = (key) =>
     chartData.some((entry) => isNumeric(entry[key]));
 
-  // Fetch scales (unchanged)
+  // Fetch scales
   useEffect(() => {
     const fetchScales = async () => {
       try {
@@ -261,7 +244,7 @@ export default function ScaleDetailPage({ params: rawParams }) {
     fetchScales();
   }, []);
 
-  // -------- FETCH DATA (slightly changed to keep fields dynamic) --------
+  // FETCH DATA
   useEffect(() => {
     setLoading(true);
     const fetchData = async () => {
@@ -275,7 +258,6 @@ export default function ScaleDetailPage({ params: rawParams }) {
         );
         const json = await res.json();
 
-        // Keep all fields as-is, just ensure time is present
         const formatted = json.map((entry) => ({
           ...entry,
           time: entry.time,
@@ -290,12 +272,10 @@ export default function ScaleDetailPage({ params: rawParams }) {
       }
     };
     fetchData();
-    // NOTE: no dependency on activeMetric here; metric choice shouldn't refetch
   }, [scale_id, selectedResolution, startDate, endDate]);
 
-  // --------- DISCOVER METRICS DYNAMICALLY ----------
+  // DISCOVER METRICS
   const discoveredMetrics = useMemo(() => {
-    // Gather keys (exclude non-metrics)
     const keySet = new Set();
     for (const row of chartData) {
       if (!row) continue;
@@ -305,14 +285,12 @@ export default function ScaleDetailPage({ params: rawParams }) {
         keySet.add(k);
       }
     }
-    // Only keep numeric metrics that actually have data in the window
     const numeric = [];
     for (const k of keySet) {
       const hasNumeric = chartData.some((r) => isNumeric(r[k]));
       if (hasNumeric) numeric.push(k);
     }
 
-    // Preferred order if present, then alphabetical rest
     const preferredOrder = [
       "weight",
       "temperature",
@@ -331,10 +309,9 @@ export default function ScaleDetailPage({ params: rawParams }) {
     return [...preferred, ...rest];
   }, [chartData]);
 
-  // pick an active metric when data or list changes
+  // pick default metric
   useEffect(() => {
     if (activeMetric && discoveredMetrics.includes(activeMetric)) return;
-    // prefer weight if available; else first metric
     const next =
       discoveredMetrics.find((m) => m === "weight") ||
       discoveredMetrics[0] ||
@@ -342,20 +319,16 @@ export default function ScaleDetailPage({ params: rawParams }) {
     setActiveMetric(next || null);
   }, [discoveredMetrics]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // compute y-domain (auto-fit) whenever metric or data changes
+  // compute y domain when metric/data changes
   useEffect(() => {
     if (!activeMetric) return;
-
-    // if wind direction, unwrap first so the domain doesn't get 360→0 jumps
     const rows = /wind[_-]?dir|direction/i.test(activeMetric)
       ? unwrapAngles(chartData, activeMetric)
       : chartData;
-
     const [low, high] = computeYDomain(activeMetric, rows);
     setYDomain([low, high]);
   }, [activeMetric, chartData]);
 
-  // pick a color for a metric
   const metricColor = (key) => {
     if (KNOWN_COLORS[key]) return KNOWN_COLORS[key];
     const i =
@@ -368,12 +341,11 @@ export default function ScaleDetailPage({ params: rawParams }) {
     (s) => String(s.scale_id) === String(scale_id)
   );
 
-  // keep activeScale text (unchanged)
   useEffect(() => {
     if (selectedScale?.name) setActiveScale(selectedScale.name);
   }, [selectedScale?.name]);
 
-  // build the metric tabs from discovered metrics
+  // metric tabs (translated)
   const metricTabs = (
     <div className="w-full overflow-x-auto touch-pan-x mb-3">
       <div className="flex gap-1 w-max whitespace-nowrap px-2">
@@ -386,19 +358,20 @@ export default function ScaleDetailPage({ params: rawParams }) {
                 ? "bg-blue-600 text-white"
                 : "bg-gray-200 text-gray-700"
             }`}
-            title={prettyLabel(metric)}
+            title={prettyLabel(metric, t)}
           >
-            {metric.charAt(0).toUpperCase() + metric.slice(1)}
+            {prettyLabel(metric, t)}
           </button>
         ))}
         {!discoveredMetrics.length && (
-          <span className="text-xs text-gray-500 px-2">No metrics</span>
+          <span className="text-xs text-gray-500 px-2">
+            {t("chart.noMetrics")}
+          </span>
         )}
       </div>
     </div>
   );
 
-  // prepare series data per active metric (handle wind direction unwrap)
   const seriesData = useMemo(() => {
     if (!activeMetric) return chartData;
     if (/wind[_-]?dir|direction/i.test(activeMetric)) {
@@ -407,11 +380,6 @@ export default function ScaleDetailPage({ params: rawParams }) {
     return chartData;
   }, [chartData, activeMetric]);
 
-  // Compute a nice Y domain for the current metric and data.
-  // - Percent-like metrics ("yield", "humidity", "percent") get a smart treatment:
-  //   * if their range is small, we center and pad tightly (but keep within [0,100])
-  //   * if their range is big, we just use [0,100]
-  // - Others get min/max with padding.
   function computeYDomain(metricKey, dataRows) {
     const isPercent = /humidity|yield|percent/i.test(metricKey);
     const values = dataRows
@@ -423,24 +391,18 @@ export default function ScaleDetailPage({ params: rawParams }) {
     const max = Math.max(...values);
     const span = Math.max(max - min, 0.0001);
     const mid = (min + max) / 2;
-
-    // generous padding for readability
     const pad = span * 0.3;
 
     if (isPercent) {
-      // If the band is small (e.g. 0–10%), fit tightly but clamp to [0,100]
-      const SMALL_RANGE_THRESHOLD = 30; // tweak as you like
+      const SMALL_RANGE_THRESHOLD = 30;
       if (span <= SMALL_RANGE_THRESHOLD) {
         let low = Math.max(0, min - pad);
         let high = Math.min(100, max + pad);
-
-        // ensure a minimum visible span so it doesn't look flat
-        const MIN_SPAN = 5; // e.g., always show at least 5 percentage points
+        const MIN_SPAN = 5;
         if (high - low < MIN_SPAN) {
           const half = MIN_SPAN / 2;
           low = Math.max(0, mid - half);
           high = Math.min(100, mid + half);
-          // if we still hit the boundary, expand the other side
           if (high - low < MIN_SPAN) {
             if (low === 0) high = Math.min(100, low + MIN_SPAN);
             else if (high === 100) low = Math.max(0, high - MIN_SPAN);
@@ -448,11 +410,9 @@ export default function ScaleDetailPage({ params: rawParams }) {
         }
         return [low, high];
       }
-      // Large variation: standard % axis
       return [0, 100];
     }
 
-    // Non-percent metrics: min/max with padding; ensure at least tiny span
     const low = min - pad;
     const high = max + pad;
     return [low, high];
@@ -460,57 +420,67 @@ export default function ScaleDetailPage({ params: rawParams }) {
 
   const handleScreenshot = async () => {
     if (!captureRef.current) return;
-
     try {
-      // fix background color
       const bg = getComputedStyle(document.body).backgroundColor || "#ffffff";
-
-      // render to PNG
       const dataUrl = await htmlToImage.toPng(captureRef.current, {
         pixelRatio: 2,
         backgroundColor: bg,
         cacheBust: true,
       });
-
-      // create a temporary link to download
       const link = document.createElement("a");
       link.href = dataUrl;
       link.download = "scale-metric.png";
       link.click();
     } catch (err) {
       console.error("❌ Screenshot failed:", err);
-      alert("Could not take screenshot.");
+      alert(t("chart.screenshotError"));
     }
   };
 
+  // Custom DatePicker button (localized)
+  const CustomInputButton = forwardRef(function CustomInputButton(
+    { value, onClick },
+    ref
+  ) {
+    return (
+      <button
+        onClick={onClick}
+        ref={ref}
+        className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl shadow transition"
+      >
+        📅 <span>{value || t("chart.datepicker.select")} </span>
+      </button>
+    );
+  });
+
   return (
     <div className="p-2 dark:text-gray-400">
-      {/* Header + Date pickers ,+ quick range + scales + metric + chart + zoom */}
+      {/* Header / controls */}
       <div className="flex flex-col md:flex-row justify-center items-center md:gap-2 mb-4 shadow-md shadow-amber-200 rounded-lg">
         <h1 className="text-sm font-bold mb-2">
           📊 {selectedScale?.name || `ID: ${scale_id}`}
         </h1>
 
-        {/* Quick range & window controls (unchanged) */}
+        {/* quick ranges + window shift */}
         <div className="flex flex-wrap items-center justify-center gap-2  mb-2 md:ml-3">
           <button
             onClick={() => setQuickRange(7)}
             className="px-3 py-1 text-xs sm:text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
           >
-            Last 7 days
+            {t("chart.quick.last7")}
           </button>
           <button
             onClick={() => setQuickRange(30)}
             className="px-3 py-1 text-xs sm:text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
           >
-            Last 30 days
+            {t("chart.quick.last30")}
           </button>
           <button
             onClick={goToday}
             className="px-3 py-1 text-xs sm:text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-            title="Keep same span, end at today"
+            title={t("chart.quick.todayTitle")}
           >
-            Today
+            {t("chart.quick.today")}
           </button>
 
           <div className="mx-2 h-5 w-px bg-gray-300" />
@@ -518,24 +488,27 @@ export default function ScaleDetailPage({ params: rawParams }) {
           <button
             onClick={() => shiftWindow(-currentSpanDays)}
             className="px-2 py-1 text-xs sm:text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
-            title="Shift window backward by current span"
+            title={t("chart.window.prevTitle")}
           >
-            ← Prev {currentSpanDays}d
+            {t("chart.window.prev")} {currentSpanDays}
+            {t("chart.window.daysShort")}
           </button>
           <button
             onClick={() => shiftWindow(currentSpanDays)}
             className="px-2 py-1 text-xs sm:text-sm rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-            title="Shift window forward by current span"
+            title={t("chart.window.nextTitle")}
             disabled={addDays(endDate, currentSpanDays) > now()}
           >
-            Next {currentSpanDays}d →
+            {t("chart.window.next")} {currentSpanDays}
+            {t("chart.window.daysShort")}
           </button>
           <span className="text-xs text-gray-500 ml-2">
-            (showing {timeframe} days)
+            {t("chart.window.showingPrefix")} {timeframe}{" "}
+            {t("chart.window.showingSuffix")}
           </span>
         </div>
 
-        {/* Date pickers (unchanged) */}
+        {/* Date pickers */}
         <div className="flex mb-4 mt-2 justify-center gap-2 text-xs sm:text-sm ">
           <DatePicker
             selected={startDate}
@@ -565,9 +538,9 @@ export default function ScaleDetailPage({ params: rawParams }) {
         </div>
       </div>
 
-      {/** Screenshot to capture */}
+      {/* capture area */}
       <div ref={captureRef} className="py-2">
-        {/* Scales (unchanged) */}
+        {/* scales list */}
         <div className="w-full overflow-x-auto touch-pan-x mb-3">
           <div className="flex gap-1 w-max whitespace-nowrap px-2">
             {scales.map((scale) => (
@@ -587,10 +560,10 @@ export default function ScaleDetailPage({ params: rawParams }) {
           </div>
         </div>
 
-        {/* Metric tabs: now dynamic */}
+        {/* Metric tabs */}
         {metricTabs}
 
-        {/* Download CSV (current view) — unchanged */}
+        {/* Download CSV (admin) */}
         {status === "authenticated" &&
           session?.user?.isAdmin &&
           chartData &&
@@ -606,17 +579,19 @@ export default function ScaleDetailPage({ params: rawParams }) {
                   startDate.toISOString()
                 )}&end=${encodeURIComponent(endDate.toISOString())}&format=csv`}
               >
-                ⬇️ Download CSV all metrics (current view)
+                ⬇️ {t("chart.downloadCsvAll")}
               </a>
             </div>
           )}
 
         {/* Loading */}
         {loading && (
-          <div className="text-center mb-4 text-gray-500">Loading data...</div>
+          <div className="text-center mb-4 text-gray-500">
+            {t("chart.loading")}
+          </div>
         )}
 
-        {/* Chart (now auto-picks chart type & units per metric) */}
+        {/* Chart */}
         {!loading && activeMetric && hasDataForKey(activeMetric) && (
           <div className="w-full h-[350px] md:h-[550px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -632,14 +607,11 @@ export default function ScaleDetailPage({ params: rawParams }) {
                     labelFormatter={formatDate}
                     formatter={(value) => [
                       formatY(value, activeMetric),
-                      prettyLabel(activeMetric),
+                      prettyLabel(activeMetric, t),
                     ]}
                   />
-                  <Legend formatter={() => prettyLabel(activeMetric)} />
-                  <Bar
-                    dataKey={activeMetric}
-                    fill={metricColor(activeMetric)}
-                  />
+                  <Legend formatter={() => prettyLabel(activeMetric, t)} />
+                  <Bar dataKey={activeMetric} fill={metricColor(activeMetric)} />
                 </BarChart>
               ) : (
                 <LineChart data={seriesData}>
@@ -653,10 +625,10 @@ export default function ScaleDetailPage({ params: rawParams }) {
                     labelFormatter={formatDate}
                     formatter={(value) => [
                       formatY(value, activeMetric),
-                      prettyLabel(activeMetric),
+                      prettyLabel(activeMetric, t),
                     ]}
                   />
-                  <Legend formatter={() => prettyLabel(activeMetric)} />
+                  <Legend formatter={() => prettyLabel(activeMetric, t)} />
                   <Line
                     dataKey={activeMetric}
                     stroke={metricColor(activeMetric)}
@@ -670,28 +642,28 @@ export default function ScaleDetailPage({ params: rawParams }) {
           </div>
         )}
 
-        {/* Y-axis zoom & resolution buttons (unchanged) */}
+        {/* Controls */}
         <div className="flex flex-wrap gap-2 justify-center mb-2">
           <button
             className="w-8 px-1 py-1 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 cursor-pointer"
             onClick={zoomInY}
-            title="Zoom in Y"
+            title={t("chart.zoomIn")}
           >
             +
           </button>
           <button
             className="w-8 px-1 py-1 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 cursor-pointer"
             onClick={zoomOutY}
-            title="Zoom out Y"
+            title={t("chart.zoomOut")}
           >
             -
           </button>
           <button
             className="px-2 text-sm py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
             onClick={resetY}
-            title="Auto fit Y to data"
+            title={t("chart.resetYTitle")}
           >
-            Reset Y
+            {t("chart.resetY")}
           </button>
 
           <div className="mx-2 h-5 w-px bg-gray-300" />
@@ -704,7 +676,7 @@ export default function ScaleDetailPage({ params: rawParams }) {
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
-            Daily
+            {t("resolution.daily")}
           </button>
           <button
             onClick={() => setSelectedResolution("hourly")}
@@ -714,13 +686,13 @@ export default function ScaleDetailPage({ params: rawParams }) {
                 : "bg-gray-200 hover:bg-gray-300 text-gray-700"
             }`}
           >
-            Hourly
+            {t("resolution.hourly")}
           </button>
           <button
             onClick={handleScreenshot}
             className="text-sm p-1 rounded cursor-pointer bg-red-300 hover:bg-red-400 hover:text-neutral-200 text-neutral-950"
           >
-            Save as png 📸
+            {t("chart.screenshot")}
           </button>
         </div>
       </div>
@@ -728,7 +700,8 @@ export default function ScaleDetailPage({ params: rawParams }) {
       {/* No data */}
       {!loading && (!activeMetric || !hasDataForKey(activeMetric)) && (
         <div className="text-center text-red-500 mt-6">
-          ❌ No data available for {activeMetric || "selected metric"}.
+          ❌ {t("chart.noDataPrefix")} {activeMetric || t("chart.noDataDefault")}
+          .
         </div>
       )}
     </div>

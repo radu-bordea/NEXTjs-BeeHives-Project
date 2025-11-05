@@ -1,23 +1,8 @@
 "use client";
 
 /**
- * WeightChartsPage
- * -------------------------------------------------------
+ * WeightChartsPage (i18n)
  * Compare "weight" across multiple beehive scales.
- *
- * KEY IDEAS:
- * - We fetch /api/scales to list all scales.
- * - User picks a date range + resolution (daily/hourly).
- * - For each selected scale, we fetch /api/scale-data/[scaleId].
- * - We normalize timestamps into "buckets" (hour or day) so
- *   multiple series align on the same X-axis points.
- * - Two views:
- *     1) Overlay: one chart with multiple lines (one per scale)
- *     2) Small multiples: a mini-chart per scale
- *
- * Perf notes:
- * - Basic in-memory cache (cacheRef) avoids re-fetching the same
- *   selection/time/resolution combo while the page is open.
  */
 
 import React, { useEffect, useMemo, useRef, useState, forwardRef } from "react";
@@ -36,65 +21,39 @@ import "react-datepicker/dist/react-datepicker.css";
 import Link from "next/link";
 import SpinnerSmall from "../components/SpinnerSmall";
 import * as htmlToImage from "html-to-image";
+import { useLang } from "../components/LanguageProvider"; // ⬅️ i18n
 
-/* =========================================================
-   Small UI helper: custom DatePicker trigger button
-   - forwardRef so DatePicker can focus the underlying button
-   - purely presentational
-========================================================= */
+/* ====================== UI helpers ====================== */
 const CustomInputButton = forwardRef(function CustomInputButton(
   { value, onClick },
   ref
 ) {
+  const { t } = useLang();
   return (
     <button
       onClick={onClick}
       ref={ref}
       className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-xl shadow transition text-xs sm:text-sm cursor-pointer"
     >
-      📅 <span>{value || "Choose date"}</span>
+      📅 <span>{value || t("weightCharts.datepicker.choose")}</span>
     </button>
   );
 });
 
-/* =========================================================
-   Colors & formatting helpers
-   - colorFor: deterministic color per scale (stable legend)
-   - toIsoNoMs: nicer ISO string (remove milliseconds)
-   - formatDateTick: x-axis tick text (hourly vs daily)
-   - formatNum: round numbers to 2 decimals for UI
-========================================================= */
+/* ====================== Colors & format ====================== */
 const COLORS = [
-  "#1e88e5", // blue
-  "#fb8c00", // orange
-  "#43a047", // green
-  "#e53935", // red
-  "#8e24aa", // purple
-  "#00acc1", // cyan
-  "#7cb342", // lime green
-  "#f4511e", // deep orange
-  "#5e35b1", // indigo
-  "#00897b", // teal
-  "#6d4c41", // brown
-  "#3949ab", // blue indigo
-  "#c0ca33", // yellow-green
-  "#5c6bc0", // soft blue
-  "#0097a7", // cyan teal
-  "#d81b60", // pink
-  "#757575", // grey
-  "#9ccc65", // light green
-  "#ffb300", // amber
-  "#8d6e63", // warm brown
+  "#1e88e5","#fb8c00","#43a047","#e53935","#8e24aa",
+  "#00acc1","#7cb342","#f4511e","#5e35b1","#00897b",
+  "#6d4c41","#3949ab","#c0ca33","#5c6bc0","#0097a7",
+  "#d81b60","#757575","#9ccc65","#ffb300","#8d6e63",
 ];
 
-// Deterministic color by scale id/name (hash → palette index)
 function colorFor(key) {
   const n =
     Math.abs([...String(key)].reduce((acc, ch) => acc + ch.charCodeAt(0), 0)) %
     COLORS.length;
   return COLORS[n];
 }
-
 function toIsoNoMs(dateLike) {
   try {
     return new Date(dateLike).toISOString().replace(/\.\d{3}Z$/, "Z");
@@ -102,36 +61,12 @@ function toIsoNoMs(dateLike) {
     return "";
   }
 }
-
-function formatDateTick(iso, resolution) {
-  const d = new Date(iso);
-  return resolution === "hourly"
-    ? d.toLocaleString(undefined, {
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : d.toLocaleDateString(undefined, {
-        year: "2-digit",
-        month: "2-digit",
-        day: "2-digit",
-      });
-}
-
 function formatNum(v) {
   if (typeof v !== "number" || !Number.isFinite(v)) return "";
   return (Math.round(v * 100) / 100).toFixed(2);
 }
 
-/* =========================================================
-   Time bucketing
-   WHY: Real data timestamps rarely line up perfectly. To compare
-   lines on the same X axis, we "bucket" timestamps:
-   - hourly → round down to the start of the hour (UTC)
-   - daily  → round down to midnight (UTC)
-   NOTE: We use UTC here for deterministic bucketing across environments.
-========================================================= */
+/* ====================== Time helpers ====================== */
 function normalizeTimeBucket(iso, resolution) {
   const d = new Date(iso);
   if (resolution === "hourly") {
@@ -142,83 +77,56 @@ function normalizeTimeBucket(iso, resolution) {
   return toIsoNoMs(d.toISOString());
 }
 
-/* =========================================================
-   mergeToOverlay(datasetMap, resolution)
-   INPUT:
-   - datasetMap: { [scaleId]: Array<Row> }, where Row has at least { time, weight? }
-   - resolution: "hourly" | "daily"
-   OUTPUT:
-   - Array of rows: [{ time, "<scaleIdA>": 12.3, "<scaleIdB>": 13.1, ... }]
-   PURPOSE:
-   - Build a single dataset keyed by time bucket so Recharts can
-     render multiple <Line dataKey=scaleId> series on one chart.
-   - Handles different field casings (weight/Weight/WEIGHT).
-========================================================= */
+/* ====================== Merge to overlay ====================== */
 function mergeToOverlay(datasetMap, resolution) {
   const bucketMap = new Map();
-
   for (const [scaleKey, rows] of Object.entries(datasetMap)) {
     for (const r of rows) {
-      // 1) Choose the bucket for this row (aligns across scales)
       const bucket = normalizeTimeBucket(r.time, resolution);
-
-      // 2) Either start a new row or build on the existing row at that time
       const existing = bucketMap.get(bucket) || { time: bucket };
-
-      // 3) Extract weight; tolerate different casings & a 'value' fallback
       const w =
-        r.weight ??
-        r.Weight ??
-        r.WEIGHT ??
-        (typeof r.value === "number" ? r.value : undefined);
-
-      // 4) Only keep numeric values (skip missing or bad data)
+        r?.weight ?? r?.Weight ?? r?.WEIGHT ??
+        (typeof r?.value === "number" ? r.value : undefined);
       if (typeof w === "number" && Number.isFinite(w)) {
         existing[scaleKey] = w;
       }
-
       bucketMap.set(bucket, existing);
     }
   }
-
-  // 5) Convert map → sorted array (ascending by time)
   return [...bucketMap.values()].sort(
     (a, b) => new Date(a.time) - new Date(b.time)
   );
 }
 
-/* =========================================================
-   Main page component
-========================================================= */
+/* ====================== Page ====================== */
 export default function WeightChartsPage() {
-  // ----------- Core state (UI + data) -----------
-  const [scales, setScales] = useState([]); // from /api/scales
-  const [search, setSearch] = useState(""); // filter string for the picker
-  const [selectedIds, setSelectedIds] = useState([]); // which scales are selected
+  const { t, lang } = useLang(); // ⬅️ translations + locale
+  const locale = lang === "sv" ? "sv-SE" : "en-US";
+
+  // Core state
+  const [scales, setScales] = useState([]);
+  const [search, setSearch] = useState("");
+  const [selectedIds, setSelectedIds] = useState([]);
   const [resolution, setResolution] = useState("daily"); // daily | hourly
   const [viewMode, setViewMode] = useState("overlay"); // overlay | smallmult
   const captureRef = useRef(null);
-  const [image, setImage] = useState(null);
 
-  // Date range controls (default last 14 days → "quick to good")
+  // Date range
   const now = () => new Date();
-  const addDays = (date, n) => {
-    const d = new Date(date);
-    d.setDate(d.getDate() + n);
-    return d;
+  const addDays = (d, n) => {
+    const x = new Date(d);
+    x.setDate(x.getDate() + n);
+    return x;
   };
   const [startDate, setStartDate] = useState(addDays(now(), -14));
   const [endDate, setEndDate] = useState(now());
 
-  // Network/UI flags
+  // Network / cache
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // Small in-memory cache to avoid re-fetching same params during the session
-  // key shape: `${scaleId}|${resolution}|${startISO}|${endISO}`
   const cacheRef = useRef(new Map());
 
-  // ----------- 1) Load the available scales once -----------
+  // Load scales once
   useEffect(() => {
     (async () => {
       try {
@@ -226,19 +134,17 @@ export default function WeightChartsPage() {
         const json = await res.json();
         const list = Array.isArray(json.scales) ? json.scales : [];
         setScales(list);
-
-        // UX: preselect a few so the first render shows lines immediately
         setSelectedIds((prev) =>
           prev.length ? prev : list.slice(0, 3).map((s) => String(s.scale_id))
         );
       } catch (e) {
         console.error(e);
-        setError("Failed to load scales.");
+        setError(t("weightCharts.errors.loadScales"));
       }
     })();
-  }, []);
+  }, [t]);
 
-  // ----------- Derived: filter scales by search -----------
+  // Filter
   const filteredScales = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return scales;
@@ -249,15 +155,11 @@ export default function WeightChartsPage() {
     });
   }, [search, scales]);
 
-  // ----------- 2) Fetch data for the selected scales -----------
-  // dataByScale shape: { [scaleId]: Array<Row> }
+  // Fetch data for selected
   const [dataByScale, setDataByScale] = useState({});
-
   useEffect(() => {
     let isCancelled = false;
-
     (async () => {
-      // If nothing is selected, clear data and bail
       if (!selectedIds.length) {
         setDataByScale({});
         return;
@@ -265,23 +167,16 @@ export default function WeightChartsPage() {
 
       setLoading(true);
       setError("");
-
-      // These two values define the "window" we’ll request from the API
       const startISO = startDate.toISOString();
       const endISO = endDate.toISOString();
 
       try {
-        // Fetch all selected series in parallel (Promise.all)
         const results = await Promise.all(
           selectedIds.map(async (scaleId) => {
             const key = `${scaleId}|${resolution}|${startISO}|${endISO}`;
-
-            // 1) Return cached rows if we already fetched this exact window
             if (cacheRef.current.has(key)) {
               return { scaleId, rows: cacheRef.current.get(key) };
             }
-
-            // 2) Otherwise fetch from your API
             const url = `/api/scale-data/${encodeURIComponent(
               scaleId
             )}?resolution=${encodeURIComponent(
@@ -289,23 +184,17 @@ export default function WeightChartsPage() {
             )}&start=${encodeURIComponent(startISO)}&end=${encodeURIComponent(
               endISO
             )}`;
-
             const res = await fetch(url);
             if (!res.ok) throw new Error(`Fetch error ${res.status}`);
-
             const rows = await res.json();
-
-            // 3) Cache the raw rows for this exact key
             cacheRef.current.set(key, rows);
             return { scaleId, rows };
           })
         );
 
-        // 4) When all come back, sanitize/normalize into dataByScale
         if (!isCancelled) {
           const next = {};
           for (const { scaleId, rows } of results) {
-            // We only keep rows with numeric weight (skip corrupted/empty)
             next[String(scaleId)] = (rows || []).filter((r) => {
               const w = r?.weight ?? r?.Weight ?? r?.WEIGHT;
               return typeof w === "number" && Number.isFinite(w);
@@ -315,38 +204,30 @@ export default function WeightChartsPage() {
         }
       } catch (e) {
         console.error(e);
-        if (!isCancelled) setError("Failed to load scale data.");
+        if (!isCancelled) setError(t("weightCharts.errors.loadData"));
       } finally {
         if (!isCancelled) setLoading(false);
       }
     })();
-
-    // Cleanup: if dependencies change quickly, ignore outdated results
     return () => {
       isCancelled = true;
     };
-  }, [selectedIds, resolution, startDate, endDate]);
+  }, [selectedIds, resolution, startDate, endDate, t]);
 
-  // ----------- 3) Build overlay dataset & series keys -----------
-  // overlayData: [{ time, "<scaleIdA>": 12.3, "<scaleIdB>": 13.1, ... }]
-  const overlayData = useMemo(() => {
-    return mergeToOverlay(dataByScale, resolution);
-  }, [dataByScale, resolution]);
-
-  // overlaySeriesKeys: ["<scaleIdA>", "<scaleIdB>", ...]
-  // (Recharts needs to know which <Line dataKey> to render)
+  // Overlay dataset & series keys
+  const overlayData = useMemo(
+    () => mergeToOverlay(dataByScale, resolution),
+    [dataByScale, resolution]
+  );
   const overlaySeriesKeys = useMemo(() => {
     const keys = new Set();
     for (const row of overlayData) {
-      for (const k of Object.keys(row)) {
-        if (k !== "time") keys.add(k);
-      }
+      for (const k of Object.keys(row)) if (k !== "time") keys.add(k);
     }
     return [...keys];
   }, [overlayData]);
 
-  // ----------- 4) Build data for small multiples -----------
-  // An array like: [{ id, name, rows: [{time, weight}, ...] }, ...]
+  // Small multiples
   const smallMultiples = useMemo(() => {
     return selectedIds
       .map((id) => ({
@@ -359,7 +240,7 @@ export default function WeightChartsPage() {
       .filter((s) => s.rows.length > 0);
   }, [selectedIds, dataByScale, scales]);
 
-  // ----------- UI actions -----------
+  // UI actions
   const selectAll = () =>
     setSelectedIds(filteredScales.map((s) => String(s.scale_id)));
   const clearAll = () => setSelectedIds([]);
@@ -375,66 +256,71 @@ export default function WeightChartsPage() {
 
   const handleScreenshot = async () => {
     if (!captureRef.current) return;
-
     try {
-      // fix background color
       const bg = getComputedStyle(document.body).backgroundColor || "#ffffff";
-
-      // render to PNG
       const dataUrl = await htmlToImage.toPng(captureRef.current, {
         pixelRatio: 2,
         backgroundColor: bg,
         cacheBust: true,
       });
-
-      // create a temporary link to download
       const link = document.createElement("a");
       link.href = dataUrl;
       link.download = "weight-screenshot.png";
       link.click();
     } catch (err) {
       console.error("❌ Screenshot failed:", err);
-      alert("Could not take screenshot.");
+      alert(t("weightCharts.errors.screenshot"));
     }
   };
 
-  /* =========================================================
-     Render
-     - Controls (selector, date range, resolution, view)
-     - Error/loading states
-     - Chart area (overlay OR small multiples)
-  ========================================================= */
+  // Locale-aware tick formatter
+  const formatDateTick = (iso, res) => {
+    const d = new Date(iso);
+    return res === "hourly"
+      ? d.toLocaleString(locale, {
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : d.toLocaleDateString(locale, {
+          year: "2-digit",
+          month: "2-digit",
+          day: "2-digit",
+        });
+  };
+
   return (
     <div className="p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-xl font-bold">⚖️ Weight Charts — Compare Scales</h1>
+        <h1 className="text-xl font-bold">{t("weightCharts.title")}</h1>
         <div className="flex items-center gap-2 text-xs">
           <Link
             href="/scales"
             className="px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
           >
-            ← Back to Scales
+            ← {t("weightCharts.back")}
           </Link>
         </div>
       </div>
 
       {/* Controls grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
-        {/* A) Scale selector (search + list + actions) */}
+        {/* A) Selector */}
         <div className="rounded-lg border p-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="font-semibold text-sm">Select Scales</span>
+            <span className="font-semibold text-sm">{t("weightCharts.select")}</span>
             <span className="text-xs text-gray-500">
-              {selectedIds.length} selected
+              {selectedIds.length} {t("weightCharts.selected")}
             </span>
           </div>
 
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or id..."
-            className="w-full text-sm px-2 py-1 mb-2 rounded border  "
+            placeholder={t("weightCharts.searchPlaceholder")}
+            className="w-full text-sm px-2 py-1 mb-2 rounded border"
           />
 
           <div className="flex gap-2 mb-2">
@@ -442,17 +328,16 @@ export default function WeightChartsPage() {
               onClick={selectAll}
               className="px-2 py-1 text-xs rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer"
             >
-              Select All (filtered)
+              {t("weightCharts.selectAll")}
             </button>
             <button
               onClick={clearAll}
               className="px-2 py-1 text-xs rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer"
             >
-              Clear
+              {t("weightCharts.clear")}
             </button>
           </div>
 
-          {/* Fixed-height scrollable list (same visual size as before) */}
           <div className="h-40 overflow-y-auto pr-2 space-y-1">
             {filteredScales.map((s) => {
               const id = String(s.scale_id);
@@ -476,22 +361,22 @@ export default function WeightChartsPage() {
               );
             })}
             {!filteredScales.length && (
-              <div className="text-xs text-gray-500">No matches</div>
+              <div className="text-xs text-gray-500">
+                {t("weightCharts.noMatches")}
+              </div>
             )}
           </div>
         </div>
 
-        {/* B) Time range & resolution */}
+        {/* B) Time & resolution */}
         <div className="rounded-lg border p-3 space-y-2">
-          <div className="font-semibold text-sm">Time Range</div>
+          <div className="font-semibold text-sm">{t("weightCharts.timeRange")}</div>
           <div className="flex flex-wrap gap-2">
             <DatePicker
               selected={startDate}
               onChange={(d) => setStartDate(d)}
               showTimeSelect={resolution === "hourly"}
-              dateFormat={
-                resolution === "hourly" ? "dd.MM.yyyy HH:mm" : "dd.MM.yyyy"
-              }
+              dateFormat={resolution === "hourly" ? "dd.MM.yyyy HH:mm" : "dd.MM.yyyy"}
               customInput={<CustomInputButton />}
               maxDate={endDate}
             />
@@ -499,9 +384,7 @@ export default function WeightChartsPage() {
               selected={endDate}
               onChange={(d) => setEndDate(d)}
               showTimeSelect={resolution === "hourly"}
-              dateFormat={
-                resolution === "hourly" ? "dd.MM.yyyy HH:mm" : "dd.MM.yyyy"
-              }
+              dateFormat={resolution === "hourly" ? "dd.MM.yyyy HH:mm" : "dd.MM.yyyy"}
               customInput={<CustomInputButton />}
               minDate={startDate}
               maxDate={now()}
@@ -513,24 +396,24 @@ export default function WeightChartsPage() {
               onClick={() => setQuickRange(7)}
               className="px-2 py-1 text-xs rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer"
             >
-              Last 7 days
+              {t("chart.quick.last7")}
             </button>
             <button
               onClick={() => setQuickRange(30)}
               className="px-2 py-1 text-xs rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer"
             >
-              Last 30 days
+              {t("chart.quick.last30")}
             </button>
             <button
               onClick={() => setQuickRange(90)}
               className="px-2 py-1 text-xs rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer"
             >
-              Last 90 days
+              {t("weightCharts.quick.last90")}
             </button>
           </div>
 
           <div className="mt-2">
-            <div className="font-semibold text-sm mb-1">Resolution</div>
+            <div className="font-semibold text-sm mb-1">{t("weightCharts.resolution")}</div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setResolution("daily")}
@@ -540,7 +423,7 @@ export default function WeightChartsPage() {
                     : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
-                Daily
+                {t("resolution.daily")}
               </button>
               <button
                 onClick={() => setResolution("hourly")}
@@ -550,15 +433,15 @@ export default function WeightChartsPage() {
                     : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
-                Hourly
+                {t("resolution.hourly")}
               </button>
             </div>
           </div>
         </div>
 
-        {/* C) View mode toggle */}
+        {/* C) View mode */}
         <div className="rounded-lg border p-3 space-y-2">
-          <div className="font-semibold text-sm">View</div>
+          <div className="font-semibold text-sm">{t("weightCharts.view")}</div>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="radio"
@@ -567,7 +450,7 @@ export default function WeightChartsPage() {
               checked={viewMode === "overlay"}
               onChange={() => setViewMode("overlay")}
             />
-            Overlay (one chart, many lines)
+            {t("weightCharts.view.overlay")}
           </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
@@ -577,18 +460,17 @@ export default function WeightChartsPage() {
               checked={viewMode === "smallmult"}
               onChange={() => setViewMode("smallmult")}
             />
-            Small multiples (one per scale)
+            {t("weightCharts.view.smallmult")}
           </label>
 
           <div className="text-xs text-gray-500">
-            Tip: Overlay is great for quick comparison; small multiples help
-            when lines overlap heavily.
+            {t("weightCharts.tip")}
           </div>
         </div>
 
-        {/* D) Legend preview (color chips) */}
+        {/* D) Legend */}
         <div className="rounded-lg border p-3 space-y-2">
-          <div className="font-semibold text-sm">Legend</div>
+          <div className="font-semibold text-sm">{t("weightCharts.legend")}</div>
           <div className="flex flex-wrap gap-2">
             {selectedIds.map((id) => {
               const name =
@@ -607,7 +489,9 @@ export default function WeightChartsPage() {
               );
             })}
             {!selectedIds.length && (
-              <span className="text-xs text-gray-500">No scales selected</span>
+              <span className="text-xs text-gray-500">
+                {t("weightCharts.noSelected")}
+              </span>
             )}
           </div>
         </div>
@@ -627,10 +511,9 @@ export default function WeightChartsPage() {
         </div>
       )}
 
-      {/* Charts area */}
+      {/* Charts */}
       {!loading && selectedIds.length > 0 && (
         <>
-          {/* Overlay view: one chart, many lines */}
           {viewMode === "overlay" ? (
             <div
               ref={captureRef}
@@ -645,20 +528,19 @@ export default function WeightChartsPage() {
                     minTickGap={24}
                   />
                   <YAxis
-                    domain={["dataMin - 5", "dataMax + 5"]} // adds ±0.5 kg
+                    domain={["dataMin - 5", "dataMax + 5"]}
                     tickFormatter={(v) =>
                       typeof v === "number" ? `${formatNum(v)}` : ""
                     }
                     label={{
-                      value: "Weight (kg)",
+                      value: t("metric.weight"), // localized axis label
                       angle: -90,
                       position: "insideLeft",
                     }}
                   />
                   <Tooltip
-                    labelFormatter={(v) => new Date(v).toLocaleString()}
+                    labelFormatter={(v) => new Date(v).toLocaleString(locale)}
                     formatter={(value, key) => {
-                      // 'key' is the scaleId here; show a friendly name
                       const s =
                         scales.find(
                           (sc) => String(sc.scale_id) === String(key)
@@ -676,8 +558,6 @@ export default function WeightChartsPage() {
                       return s.name || `ID: ${key}`;
                     }}
                   />
-
-                  {/* One <Line> per selected series key */}
                   {overlaySeriesKeys.map((key) => (
                     <Line
                       key={key}
@@ -693,13 +573,11 @@ export default function WeightChartsPage() {
               </ResponsiveContainer>
             </div>
           ) : (
-            // Small multiples view: one mini chart per scale
             <div
               ref={captureRef}
               className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
             >
               {smallMultiples.map(({ id, name, rows }) => {
-                // build & sort the series for this scale
                 const series = rows
                   .map((r) => ({
                     time: toIsoNoMs(r.time),
@@ -707,14 +585,13 @@ export default function WeightChartsPage() {
                   }))
                   .sort((a, b) => new Date(a.time) - new Date(b.time));
 
-                // compute dynamic Y padding (10% of span; minimum 0.5)
                 const vals = series
                   .map((d) => d.weight)
                   .filter((v) => typeof v === "number" && Number.isFinite(v));
                 const yMin = vals.length ? Math.min(...vals) : 0;
                 const yMax = vals.length ? Math.max(...vals) : 1;
                 const span = Math.max(yMax - yMin, 0.0001);
-                const pad = Math.max(span * 0.1, 0.5); // 10% or at least 0.5 kg
+                const pad = Math.max(span * 0.1, 0.5);
 
                 return (
                   <div key={id} className="rounded-xl border p-2">
@@ -732,16 +609,18 @@ export default function WeightChartsPage() {
                             minTickGap={20}
                           />
                           <YAxis
-                            domain={[yMin - pad, yMax + pad]} // add top/bottom air
+                            domain={[yMin - pad, yMax + pad]}
                             tickFormatter={(v) =>
                               typeof v === "number" ? `${formatNum(v)}` : ""
                             }
                           />
                           <Tooltip
-                            labelFormatter={(v) => new Date(v).toLocaleString()}
+                            labelFormatter={(v) =>
+                              new Date(v).toLocaleString(locale)
+                            }
                             formatter={(value) => [
                               `${formatNum(value)} kg`,
-                              "Weight",
+                              t("metric.weight"),
                             ]}
                           />
                           <Line
@@ -761,27 +640,27 @@ export default function WeightChartsPage() {
 
               {!smallMultiples.length && (
                 <div className="text-sm text-gray-500">
-                  No data in selected window.
+                  {t("weightCharts.noDataWindow")}
                 </div>
               )}
             </div>
           )}
 
           <div className="text-center">
-          <button
-            onClick={handleScreenshot}
-            className="text-sm p-1 rounded cursor-pointer bg-red-300 hover:bg-red-400 hover:text-neutral-200 text-neutral-950"
-          >
-           Save as png 📸
-          </button>
+            <button
+              onClick={handleScreenshot}
+              className="text-sm p-1 rounded cursor-pointer bg-red-300 hover:bg-red-400 hover:text-neutral-200 text-neutral-950"
+            >
+              {t("chart.screenshot")}
+            </button>
           </div>
         </>
       )}
 
-      {/* Empty state when nothing selected */}
+      {/* Empty state */}
       {!loading && selectedIds.length === 0 && (
         <div className="text-sm text-gray-500">
-          Select at least one scale to display charts.
+          {t("weightCharts.empty")}
         </div>
       )}
     </div>
