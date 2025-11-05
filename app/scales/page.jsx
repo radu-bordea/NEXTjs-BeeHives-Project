@@ -9,6 +9,8 @@ import Table from "../components/Table";
 import getPageRange from "@/utils/paginationRange";
 import { useSession } from "next-auth/react";
 import { useLang } from "../components/LanguageProvider";
+import Image from "next/image";
+import bidata from "@/public/assets/images/bidata.png";
 
 export default function ScalesPage() {
   const { t } = useLang();
@@ -244,15 +246,25 @@ export default function ScalesPage() {
     );
 
   const resLabel =
-    selectedResolution === "hourly"
-      ? t("scale.hourly")
-      : t("scale.daily");
+    selectedResolution === "hourly" ? t("scale.hourly") : t("scale.daily");
 
   return (
     <div className="relative p-6">
       {syncing && <Spinner />}
 
-      <h1 className="text-2xl font-bold mb-4">🐝 {t("scalesPage.title")}</h1>
+      <h1 className="text-2xl font-bold mb-4">
+        {" "}
+        <div className="py-4">
+          <Image
+            src={bidata}
+            alt="BiData logo"
+            width={100}
+            height={100}
+            className="object-contain"
+          />
+        </div>{" "}
+        {t("scalesPage.title")}
+      </h1>
 
       {/* Sync button (admin only) */}
       {status === "authenticated" && session?.user?.isAdmin && (

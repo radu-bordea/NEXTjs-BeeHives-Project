@@ -1,8 +1,21 @@
 {
-  "about.title": "About the Beehive Data Project",
-  "about.p1": "The BiData project is funded by the European Agricultural Fund for Rural Development (EAFRD) and runs from 1.11.2023 to 31.10.2025. The project aims to create a common platform for automated data collection from beehives in Åland, a collaboration between the University of Åland and partners in Åland agriculture.",
-  "about.p2": "The goal of the project is to create conditions for reduced winter losses of bee colonies, improved honey harvest, and optimized pollination of crops such as apples.",
-  "about.p3": "Through a network of connected hive scales with temperature sensors, connected to a public platform for data visualization (bidata.site), beekeepers can see developments in different hives without physically visiting hives. This way they can create a good basis for actions in beekeeping.",
+  "about.title1": "Welcome to the BiData Project!",
+  "about.p1": "The BiData project is funded by the European Agricultural Fund for Rural Development (EAFRD) and runs from 1.11.2023 to 31.10.2025. The project aims to create a shared platform for automated data collection from beehives on Åland, in collaboration between Åland University of Applied Sciences and stakeholders in Åland’s agricultural sector.",
+
+  "about.title2": "Why is the BiData project important for Åland?",
+  "about.p2": "Åland is Finland’s apple orchard and accounts for over 70% of all domestically sold apples. But for apples to grow, the flowers must be pollinated in spring — and this is where bees play a crucial role. Many apple growers have their own hives, or they collaborate with local beekeepers. Traditional beekeeping is a craft based on experience, and there are many risks such as diseases or starvation during late winter. The goal of this project is to reduce predictable risks through automated data collection.",
+
+  "about.title3": "The weight of the beehive tells us how the colony is doing",
+  "about.p3": "The hive’s weight and temperature are important indicators of colony health. A scale is placed under the hive and connected to a small computer with a transmitter. The entire setup runs on batteries and solar power. This is an example of IoT — the Internet of Things — where data from different sources is connected to reveal patterns and larger contexts. In this way, we can collect real-time data about the colonies’ condition without physically inspecting the hives and disturbing the bees. With this information, it becomes easier to decide when to take action — for example, in early spring when food is scarce in nature.",
+
+  "about.title4": "Accessible data through the Internet of Things (IoT)",
+  "about.p4": "Data from the various measuring stations is collected into a database that is publicly available online through this website. Beekeepers can follow the development of different hives without physically visiting them. This provides a better basis for making the right decisions at the right time. Visitors can also explore data from the different measuring stations, see what kind of information is collected, and follow the development of the hives over time. Sort by date or measuring station, for example, to get a clearer picture of how the colonies are doing throughout the year or during a specific period.",
+
+  "about.title5": "A collaborative project between the EU, Åland University of Applied Sciences, and local farmers",
+  "about.p5": "Thanks to the project, both beekeepers and apple growers have established new connections and collaborations. The BiData project is funded by the European Agricultural Fund for Rural Development (EAFRD) and runs from 1.11.2023 to 31.10.2025. The project’s goal is to create a shared platform for automated data collection from beehives on Åland, in collaboration between Åland University of Applied Sciences and actors in Åland’s agricultural sector.",
+
+  "about.title6": "Participating organizations and beekeepers: (List and/or logos)",
+  "about.p6": "Åland University of Applied Sciences, Daniels, Karlsson, Häggblom, Leroux, and Eckerman. The project is financed by the European Agricultural Fund for Rural Development. Daniels (Tjudö): https://www.danielsfrukt.com/, Leroux: https://alandhoney.com/",
 
   "layout.title": "BeeHives Project",
   "layout.description": "Check evolution of beehives data",

@@ -1,8 +1,21 @@
 {
-  "about.title": "Om BiData-projektet",
+  "about.title1": "Välkommen till BiData-projektet!",
   "about.p1": "BiData-projektet finansieras av Europeiska jordbruksfonden för landsbygdsutveckling (EJFLU) och pågår från 1.11.2023 till 31.10.2025. Projektets mål är att skapa en gemensam plattform för automatiserad datainsamling från bikupor på Åland, i samarbete mellan Högskolan på Åland och aktörer inom åländskt jordbruk.",
-  "about.p2": "Syftet är att minska vinterförluster av bisamhällen, förbättra honungsskörden och optimera pollinering av grödor som till exempel äpplen.",
-  "about.p3": "Genom ett nätverk av uppkopplade bikupvågar med temperatursensorer, kopplade till en öppen plattform för datavisualisering (bidata.site), kan biodlare följa utvecklingen i olika kupor utan att fysiskt besöka dem. Det ger ett bättre underlag för rätt åtgärder i rätt tid.",
+
+  "about.title2": "Varför är BiData projektet viktigt på Åland?",
+  "about.p2": "Åland är Finlands äppelträdgård och står för över 70% av alla sålda inhemska äpplen. Men för att det skall bli äpplen måste blommorna pollineras om våren, och här spelar bin en viktig roll. Många äppelodlare har egna bikupor, eller så samarbetar man med en biodlare. Traditionell biodling är ett hantverk som bygger på erfarenhet, och det finns många risker som till exempel sjukdomar och risk för död av svält under vårvintern. Målet med detta projekt är att minska förutsägbara risker genom automatiserad datainsamling.",
+
+  "about.title3": "Bikupans vikt berättar om hur samhället mår",
+  "about.p3": "Bikupans vikt och temperatur är viktiga indikatorer på kolonins hälsa. En våg placeras under kupan, och kopplas till en liten dator med sändare. Hela paketet drivs med batterier och solenergi. Det är ett exempel på IoT - eller Internet of Things - där man kopplar ihop data från olika ställen för att se mönster och större sammanhang. På det här viset kan vi samla in realtidsdata som berättar hur samhällena mår utan att fysiskt inspektera kupan och störa bina. Med hjälp av informationen är det lättare att besluta om när det är dags att sätta in hjälpinsatser - till exempel på vårvintern då det är brist på mat i naturen.",
+
+  "about.title4": "Tillgänglig data via Internet of Things (IoT)",
+  "about.p4": "Data from the various measuring stations is collected in a database that is open online and made available via this site. Beekeepers can follow the development in different hives without physically visiting them. This provides a better basis for the right measures at the right time. You can also go in and see data from the various measuring stations, what information is collected and follow the development in the hives over time. Sort by date and measuring station, for example, for a clearer picture of how the hives are doing over the year or the time you are interested in.",
+
+  "about.title5": "Ett projekt i samarbete mellan EU, Högskolan på Åland och lokala odlare)",
+  "about.p5": "Tack vare projektet har både biodlare och äppelodlare knutit nya kontakter och samarbeten. BiData-projektet finansieras av Europeiska jordbruksfonden för landsbygdsutveckling (EJFLU) och pågår från 1.11.2023 till 31.10.2025. Projektets mål är att skapa en gemensam plattform för automatiserad datainsamling från bikupor på Åland, i samarbete mellan Högskolan på Åland och aktörer inom åländskt jordbruk.",
+
+  "about.title6": " Deltagande organisationer och biodlare: (Lista och/eller logotyper)",
+  "about.p6": "Högskolan på Åland, Daniels, Karlsson, Häggblom, Leroux och Eckerman. Projektet finasiseras av Europieska jordbruksfonden för landsbygdsutveckling Daniels (Tjudö): https://www.danielsfrukt.com/, Leroux : https://alandhoney.com/",
 
   "layout.title": "Bikup-projektet",
   "layout.description": "Övervaka utvecklingen i bikuporna",
@@ -231,5 +244,4 @@
   "weightCharts.errors.loadData": "Kunde inte ladda vågdata.",
   "weightCharts.errors.screenshot": "Kunde inte ta skärmdump.",
   "weightCharts.datepicker.choose": "Välj datum"
-
 }
