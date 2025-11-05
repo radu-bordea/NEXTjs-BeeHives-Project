@@ -126,7 +126,7 @@
   "scalesPage.title": "Bikupvågar",
   "scalesPage.syncButton": "🔄 Synka vågar från API",
   "scalesPage.syncing": "Synkar...",
-  "scalesPage.downloadCsv": "Ladda ner CSV – vald kupa ({resolution})",
+  "scalesPage.downloadCsv": "Ladda ner CSV -",
   "scalesPage.loadingTable": "Laddar tabell...",
   "scalesPage.loadErrorScales": "Kunde inte ladda vågar.",
   "scalesPage.loadErrorData": "Kunde inte hämta data för denna kupa.",
