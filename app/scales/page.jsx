@@ -245,8 +245,8 @@ export default function ScalesPage() {
 
   const resLabel =
     selectedResolution === "hourly"
-      ? t("resolution.hourly")
-      : t("resolution.daily");
+      ? t("scale.hourly")
+      : t("scale.daily");
 
   return (
     <div className="relative p-6">
@@ -300,7 +300,7 @@ export default function ScalesPage() {
                     selectedResolution
                   )}&format=csv`}
                 >
-                  ⬇️ ⬇️ {t("scalesPage.downloadCsv")} ({resLabel})
+                  ⬇️ {t("scalesPage.downloadCsv")} ({resLabel})
                 </a>
               </div>
             )}
