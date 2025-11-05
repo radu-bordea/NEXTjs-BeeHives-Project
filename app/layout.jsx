@@ -31,15 +31,19 @@ export default function MainLayout({ children }) {
         <ThemeScript />
       </head>
 
+      {/* 💡 Full height flex container */}
       <body className="flex flex-col min-h-screen overflow-x-hidden bg-[color:var(--background)] text-[color:var(--foreground)]">
         <LanguageProvider>
           <AuthProvider>
             <Navbar />
 
-            {/* this now uses t() and translated sections */}
-            <ManualWrapper />
+            {/* 💡 This ensures the middle content area expands */}
+            <main className="flex-grow flex flex-col">
+              <ManualWrapper />
+              {children}
+            </main>
 
-            <main className="flex-grow">{children}</main>
+            {/* 💡 Footer always sticks to the bottom */}
             <Footer />
           </AuthProvider>
         </LanguageProvider>
