@@ -85,13 +85,16 @@
   "manual.weightCharts.li3": "Förklaring: klicka på poster i legenden för att visa/dölja serier.",
 
   "manual.maps.title": "Karta",
-  "manual.maps.p1": "Se varje våg på kartan. Klicka på en markör för att förhandsgranska det senaste dygnets nyckeldata och navigera snabbt.",
+  "manual.maps.p1": "Se varje våg/mätstation på kartan. Klicka på en markör för att förhandsgranska det senaste dygnets nyckeldata och navigera snabbt.",
   "manual.maps.li1": "Markör-popup: visar senaste dygnets data för den vågen.",
   "manual.maps.li2": "Länkar: ”Gå till våg” (öppnar vågsidan) och ”Öppna aktuellt diagram” (öppnar diagramvyn för den vågen och tidsperioden).",
 
   "manual.admin.title": "Admin",
   "manual.admin.p1": "Endast för administratörer. Hantera vågar och data direkt via verktygen.",
   "manual.admin.li1": "Dataverktyg: granska, importera, rätta eller radera poster (där funktionen finns i UI:t).",
+
+  "manual.about.title": "Om data & synkronisering",
+  "manual.about.p1": "Data sparas schemalagt som dagliga och timvisa aggregeringar. Om ett tidsintervall ser tomt ut kan enheten ha varit offline eller jobbet försenat. Testa att uppdatera och kontrollera mätenhetens status.",
 
   "manual.panelTitle": "Handbok för bikupor",
   "manual.searchPlaceholder": "Sök sektioner…",

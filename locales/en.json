@@ -85,13 +85,16 @@
   "manual.weightCharts.li3": "Legend: click legend items to show/hide individual series.",
 
   "manual.maps.title": "Maps",
-  "manual.maps.p1": "See each scale on the map. Click a marker to preview the last day’s key data and navigate quickly.",
+  "manual.maps.p1": "See each weighbridge/gauging station on the map. Click on a marker to preview the latest key data and navigate quickly.",
   "manual.maps.li1": "Marker popup: shows last-day data for that scale.",
   "manual.maps.li2": "Links: “Go to Scale” (opens the scale page) and “Open Current Chart” (opens the chart view focused on that scale & time).",
 
   "manual.admin.title": "Admin",
   "manual.admin.p1": "Available only to admin users. Manage scales and data directly from the database utilities.",
   "manual.admin.li1": "Data controls: tools for reviewing, importing, fixing, or deleting records (where exposed by the UI).",
+
+  "manual.about.title": "About data & synchronization",
+  "manual.about.p1": "Data is saved on a scheduled basis as daily and hourly aggregations. If a time range appears empty, the device may have been offline or the job may have been delayed. Try refreshing and checking the status of the meter.",
 
   "manual.panelTitle": "Beehives Manual",
   "manual.searchPlaceholder": "Search sections…",
@@ -244,5 +247,4 @@
   "weightCharts.errors.loadData": "Failed to load scale data.",
   "weightCharts.errors.screenshot": "Could not take screenshot.",
   "weightCharts.datepicker.choose": "Choose date"
-
 }
