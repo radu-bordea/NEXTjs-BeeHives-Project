@@ -1,7 +1,7 @@
-// app/api/public/scales-info/route.js
 import clientPromise from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 
+/* ------------------ CORS ------------------ */
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,OPTIONS",
@@ -12,23 +12,44 @@ export function OPTIONS() {
   return new Response(null, { headers: CORS });
 }
 
-export async function GET() {
+/* ------------------ AUTH HELPER ------------------ */
+function isAuthorized(req) {
+  const auth = req.headers.get("authorization");
+
+  if (!auth || !auth.startsWith("Bearer ")) {
+    return false;
+  }
+
+  const token = auth.replace("Bearer ", "").trim();
+  return token === process.env.ADMIN_SECRET;
+}
+
+/* ------------------ GET (ADMIN ONLY) ------------------ */
+export async function GET(req) {
   try {
+    // 🔐 Authorization check
+    if (!isAuthorized(req)) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401, headers: CORS }
+      );
+    }
+
+    // ✅ DB connection
     const client = await clientPromise;
     const db = client.db();
 
-    // Use your public-facing collection
+    // ⚠️ Admin-only collection
     const collection = db.collection("users");
 
-    // You can sort however you like; here by name, then scale_id
     const docs = await collection
-      .find({}, { projection: { _id: 0 } }) // hide internal _id
-      .sort({ name: 1, scale_id: 1 })
+      .find({}, { projection: { _id: 0 } }) // hide Mongo _id
+      .sort({ name: 1 })
       .toArray();
 
     return NextResponse.json(docs, { headers: CORS });
   } catch (err) {
-    console.error("❌ public/scales-info error:", err);
+    console.error("❌ public/users error:", err);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500, headers: CORS }
