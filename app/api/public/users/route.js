@@ -21,7 +21,7 @@ function isAuthorized(req) {
   }
 
   const token = auth.replace("Bearer ", "").trim();
-  return token === process.env.ADMIN_SECRET;
+  return token === process.env.PUBLIC_API_TOKEN;
 }
 
 /* ------------------ GET (ADMIN ONLY) ------------------ */
